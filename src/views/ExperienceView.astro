@@ -1,0 +1,256 @@
+---
+/**
+ * صفحة الخبرات: سجل المواسم، وجدول المشاريع القابل للتصفية، وشهادات التقدير.
+ * البيانات من src/content/{locale}/experience.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import SeasonLedger from '../components/sections/SeasonLedger.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import Icon from '../components/ui/Icon.astro';
+import { displayOptions } from '../config/site';
+import { summarizeBySeason, formatNumber, arabicCount, type ClientType } from '../lib/experience';
+import type { Locale } from '../i18n/locales';
+import { t } from '../i18n/ui';
+import { getContent } from '../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const ui = t(locale);
+const { experiencePage: p, experienceRecords, appreciations } = getContent(locale);
+const ex = p.explorer;
+const seasonsDesc = summarizeBySeason(experienceRecords).reverse();
+
+const locationLabel = { makkah: 'مكة المكرمة', mashaer: 'المشاعر المقدسة' } as const;
+const typeLabel: Record<ClientType, string> = {
+  mission: 'بعثة حج',
+  company: 'شركة خدمة حجاج',
+  domestic: 'شركة حجاج الداخل',
+  government: 'جهة حكومية أو مشروع',
+};
+const projectForms = { one: 'مشروع واحد', two: 'مشروعان', few: 'مشاريع', many: 'مشروعًا' };
+---
+
+<BaseLayout locale={locale} page="experience" title={p.meta.title} description={p.meta.description}>
+  <PageHero locale={locale} title={p.hero.title} lead={p.hero.lead} />
+
+  <SeasonLedger locale={locale} title={p.ledgerTitle} showLink={false} />
+
+  <section class="section" aria-labelledby="explorer-title" data-explorer>
+    <div class="container">
+      <div class="section-head">
+        <h2 id="explorer-title">{ex.title}</h2>
+        <p>{ex.intro}</p>
+      </div>
+
+      <div class="filters" data-filters hidden>
+        <div class="filters__group" role="group" aria-label={ex.filterLocation}>
+          <span class="filters__label" aria-hidden="true">{ex.filterLocation}</span>
+          <div class="segmented">
+            <button type="button" aria-pressed="true" data-location="all">{ex.all}</button>
+            <button type="button" aria-pressed="false" data-location="makkah">{locationLabel.makkah}</button>
+            <button type="button" aria-pressed="false" data-location="mashaer">{locationLabel.mashaer}</button>
+          </div>
+        </div>
+        <div class="filters__group">
+          <label class="filters__label" for="season-filter">{ex.filterSeason}</label>
+          <select id="season-filter" data-season-select>
+            <option value="all">{ex.allSeasons}</option>
+            {seasonsDesc.map((s) => <option value={String(s.hijri)}>{s.hijri}{ui.hijriSuffix} ({s.gregorian}{ui.gregorianSuffix})</option>)}
+          </select>
+        </div>
+        <p class="filters__count" aria-live="polite" data-result-count data-template={ex.resultCount}>
+          {ex.resultCount.replace('{n}', String(experienceRecords.length))}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="records">
+          <caption class="visually-hidden">{ex.title}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{ex.columns.client}</th>
+              <th scope="col">{ex.columns.segment}</th>
+              <th scope="col">{ex.columns.location}</th>
+              <th scope="col" class="num">{ex.columns.count}</th>
+            </tr>
+          </thead>
+          {seasonsDesc.map((s) => (
+            <tbody data-season={s.hijri}>
+              <tr class="records__season">
+                <th scope="rowgroup" colspan="4">
+                  <span class="records__year">{s.hijri}{ui.hijriSuffix}</span>
+                  <span class="records__greg">{s.gregorian}{ui.gregorianSuffix}</span>
+                  <span class="records__total">{arabicCount(s.total, projectForms)}</span>
+                </th>
+              </tr>
+              {s.records.map((r) => (
+                <tr data-location={r.location} data-season={r.hijri}>
+                  <td data-label={ex.columns.client}>
+                    <div>
+                      <span class="records__client">{displayOptions.showClientNames ? r.client : ex.hiddenClient}</span>
+                      {displayOptions.showClientNames && r.note && <span class="records__note">{r.note}</span>}
+                      <span class="records__type">{typeLabel[r.clientType]}</span>
+                    </div>
+                  </td>
+                  <td data-label={ex.columns.segment}>{r.segment}</td>
+                  <td data-label={ex.columns.location}>
+                    <span class:list={['loc', `loc--${r.location}`]}>{locationLabel[r.location]}</span>
+                  </td>
+                  <td data-label={ex.columns.count} class="num">
+                    <div>
+                      <span class="ltr">{formatNumber(r.count)}</span>
+                      {(r.countUnit ?? 'pilgrims') === 'pilgrims' && <span class="records__unit"> {ex.countUnitPilgrims}</span>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+        <p class="records__empty" data-empty hidden>{ex.empty}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--mist" aria-labelledby="appreciation-title">
+    <div class="container appreciation">
+      <div class="section-head">
+        <h2 id="appreciation-title">{p.appreciation.title}</h2>
+        <p>{p.appreciation.intro}</p>
+      </div>
+      <ul class="appreciation__list" role="list">
+        {appreciations.map((item) => (
+          <li>
+            <Icon name="award" size={26} />
+            <div>
+              <h3>{item.issuer}</h3>
+              <p>{p.appreciation.seasonsLabel}: {item.seasons.map((y) => `${y}${ui.hijriSuffix}`).join('، ')}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-explorer]');
+  if (root) {
+    const filters = root.querySelector<HTMLElement>('[data-filters]')!;
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-location]'));
+    const select = root.querySelector<HTMLSelectElement>('[data-season-select]')!;
+    const groups = Array.from(root.querySelectorAll<HTMLTableSectionElement>('tbody[data-season]'));
+    const counter = root.querySelector<HTMLElement>('[data-result-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const template = counter.dataset.template ?? '{n}';
+    let location = 'all';
+
+    filters.hidden = false;
+
+    const apply = () => {
+      const season = select.value;
+      let shown = 0;
+      for (const group of groups) {
+        const groupMatches = season === 'all' || group.dataset.season === season;
+        let visibleInGroup = 0;
+        group.querySelectorAll<HTMLTableRowElement>('tr[data-location]').forEach((row) => {
+          const ok = groupMatches && (location === 'all' || row.dataset.location === location);
+          row.hidden = !ok;
+          if (ok) visibleInGroup += 1;
+        });
+        group.hidden = visibleInGroup === 0;
+        shown += visibleInGroup;
+      }
+      counter.textContent = template.replace('{n}', String(shown));
+      empty.hidden = shown !== 0;
+    };
+
+    buttons.forEach((btn) => btn.addEventListener('click', () => {
+      location = btn.dataset.location ?? 'all';
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      apply();
+    }));
+    select.addEventListener('change', apply);
+  }
+</script>
+
+<style>
+  .filters {
+    display: flex; flex-wrap: wrap; align-items: end; gap: var(--sp-4) var(--sp-6);
+    margin-block-end: var(--sp-5);
+    padding-block-end: var(--sp-5);
+    border-block-end: 1px solid var(--c-line);
+  }
+  .filters[hidden] { display: none; }
+  .filters__group { display: grid; gap: var(--sp-2); }
+  .filters__label { font-size: var(--fs-sm); font-weight: 600; color: var(--c-char); }
+  .segmented { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--c-line-strong); border-radius: var(--r-md); overflow: hidden; }
+  .segmented button {
+    min-height: 44px; padding: 0.4rem 1rem; border: 0; background: #fff;
+    font-size: var(--fs-sm); font-weight: 500; color: var(--c-text);
+  }
+  .segmented button + button { border-inline-start: 1px solid var(--c-line-strong); }
+  .segmented button[aria-pressed='true'] { background: var(--c-char); color: #fff; }
+  .segmented button:focus-visible { outline-offset: -3px; }
+  select {
+    min-height: 44px; min-width: 210px; padding: 0.4rem 0.9rem;
+    border: 1px solid var(--c-line-strong); border-radius: var(--r-md); background: #fff;
+    font-size: var(--fs-sm);
+  }
+  .filters__count { margin-inline-start: auto; font-size: var(--fs-sm); color: var(--c-muted); }
+
+  .records { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .records thead th {
+    text-align: start; font-weight: 600; color: var(--c-muted);
+    padding: var(--sp-3) var(--sp-4); border-block-end: 2px solid var(--c-char);
+  }
+  .records td { padding: var(--sp-4); border-block-end: 1px solid var(--c-line); vertical-align: top; }
+  .records .num { text-align: end; white-space: nowrap; }
+  .records__season th {
+    text-align: start; padding: var(--sp-6) var(--sp-4) var(--sp-3);
+    border-block-end: 1px solid var(--c-line-strong);
+  }
+  .records tbody:first-of-type .records__season th { padding-block-start: var(--sp-4); }
+  .records__year { font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h3); color: var(--c-char); }
+  .records__greg { color: var(--c-muted); margin-inline: var(--sp-3); }
+  .records__total {
+    font-size: var(--fs-xs); font-weight: 600; color: var(--c-red);
+    background: var(--c-red-soft); border-radius: 999px; padding: 0.1rem 0.6rem;
+  }
+  .records__client { display: block; font-weight: 600; color: var(--c-char); }
+  .records__note { display: block; color: var(--c-muted); }
+  .records__type { display: inline-block; margin-block-start: var(--sp-1); font-size: var(--fs-xs); color: var(--c-muted); }
+  .records__unit { color: var(--c-muted); }
+  .records td.num .ltr { font-weight: 600; color: var(--c-char); font-size: var(--fs-base); }
+  .loc { display: inline-flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
+  .loc::before { content: ''; width: 9px; height: 9px; border-radius: 50%; }
+  .loc--makkah::before { background: var(--c-red); }
+  .loc--mashaer::before { background: var(--c-char); }
+  .records__empty { padding: var(--sp-6) 0; color: var(--c-muted); }
+
+  @media (max-width: 759px) {
+    .records, .records tbody, .records tr, .records td, .records th { display: block; }
+    .records thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .records tbody[hidden], .records tr[hidden] { display: none; }
+    .records tr[data-location] { padding-block: var(--sp-3); border-block-end: 1px solid var(--c-line); }
+    .records td { border: 0; padding: var(--sp-1) 0; display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--sp-3); }
+    .records td::before { content: attr(data-label); color: var(--c-muted); font-size: var(--fs-xs); padding-block-start: 0.2em; }
+    .records .num { text-align: start; }
+    .records__season th { padding-inline: 0; }
+    .filters__count { margin-inline-start: 0; }
+  }
+
+  .appreciation__list { display: grid; gap: var(--sp-4); padding: 0; }
+  @media (min-width: 720px) { .appreciation__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .appreciation__list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .appreciation__list li {
+    display: flex; gap: var(--sp-4); align-items: flex-start;
+    background: #fff; padding: var(--sp-5); border-radius: var(--r-md); border: 1px solid var(--c-line);
+  }
+  .appreciation__list :global(.icon) { color: var(--c-red); }
+  .appreciation__list h3 { font-size: var(--fs-h4); line-height: 1.6; }
+  .appreciation__list p { margin-block-start: var(--sp-1); color: var(--c-muted); font-size: var(--fs-sm); }
+</style>

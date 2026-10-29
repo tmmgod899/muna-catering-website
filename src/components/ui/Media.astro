@@ -1,0 +1,99 @@
+---
+/**
+ * عرض صورة مُحسّنة بنسبة أبعاد ثابتة، أو عنصر نائب واضح عند عدم توفر الصورة.
+ * النسبة الثابتة تمنع اهتزاز التخطيط وتضمن قصًّا متسقًا عند استبدال الصور لاحقًا.
+ */
+import { Picture } from 'astro:assets';
+import Icon from './Icon.astro';
+import type { SiteImage } from '../../config/images';
+import { displayOptions } from '../../config/site';
+import { t } from '../../i18n/ui';
+import { defaultLocale, type Locale } from '../../i18n/locales';
+
+interface Props {
+  image: SiteImage;
+  /** نسبة الأبعاد بصيغة CSS، مثل "4 / 3" */
+  ratio?: string;
+  /** وصف عرض الصورة في التخطيط لاختيار المقاس المناسب */
+  sizes: string;
+  widths?: number[];
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'auto';
+  class?: string;
+  /** موضع القص داخل الإطار */
+  position?: string;
+  locale?: Locale;
+}
+
+const {
+  image,
+  ratio = '4 / 3',
+  sizes,
+  widths = [360, 540, 720, 900, 1200],
+  loading = 'lazy',
+  fetchpriority,
+  class: className = '',
+  position = 'center',
+  locale = defaultLocale,
+} = Astro.props;
+
+const ui = t(locale);
+const src = image.src;
+const usableWidths = src ? [...new Set([...widths.filter((w) => w < src.width), src.width])] : [];
+---
+
+<div class:list={['media', className]} style={`--ratio: ${ratio}; --pos: ${position};`}>
+  {
+    src ? (
+      <Picture
+        src={src}
+        alt={image.alt}
+        widths={usableWidths}
+        sizes={sizes}
+        formats={['avif', 'webp']}
+        fallbackFormat="jpg"
+        loading={loading}
+        decoding="async"
+        fetchpriority={fetchpriority}
+      />
+    ) : (
+      <div class="media__placeholder" role="img" aria-label={image.placeholder ?? ui.placeholder}>
+        <Icon name="image" size={30} />
+        {displayOptions.showPlaceholderLabels && (
+          <span class="media__badge">{ui.placeholder}</span>
+        )}
+        {image.placeholder && <span class="media__label">{image.placeholder}</span>}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .media {
+    position: relative;
+    aspect-ratio: var(--ratio);
+    overflow: hidden;
+    background: var(--c-mist);
+  }
+  .media :global(picture), .media :global(img) { width: 100%; height: 100%; }
+  .media :global(img) { object-fit: cover; object-position: var(--pos); }
+
+  .media__placeholder {
+    position: absolute; inset: 0;
+    display: grid; place-content: center; justify-items: center; gap: var(--sp-2);
+    padding: var(--sp-4);
+    text-align: center;
+    color: var(--c-muted);
+    background:
+      repeating-linear-gradient(135deg, rgb(46 49 50 / 0.035) 0 12px, transparent 12px 24px),
+      var(--c-mist);
+    border: 1.5px dashed var(--c-line-strong);
+  }
+  .media__badge {
+    font-size: var(--fs-xs); font-weight: 600;
+    color: var(--c-red);
+    background: #fff; border: 1px solid rgb(187 31 37 / 0.25);
+    padding: 0.1rem 0.6rem; border-radius: 999px;
+  }
+  .media__label { font-size: var(--fs-sm); max-width: 28ch; line-height: 1.6; }
+</style>

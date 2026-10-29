@@ -1,0 +1,298 @@
+---
+/**
+ * نموذج طلب عرض السعر.
+ * يعتمد سلوك الإرسال على contactForm.mode في src/config/site.ts:
+ * - 'demo': تحقق من الحقول فقط دون أي إرسال، مع عرض بدائل تواصل مباشرة.
+ * - 'endpoint': إرسال JSON إلى contactForm.endpoint.
+ */
+import Icon from '../ui/Icon.astro';
+import { contact, contactForm } from '../../config/site';
+import type { Locale } from '../../i18n/locales';
+import { getContent } from '../../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { contactPage } = getContent(locale);
+const f = contactPage.form;
+const phone = contact.phones[0];
+const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
+---
+
+<form
+  class="quote-form"
+  novalidate
+  data-quote-form
+  data-mode={isDemo ? 'demo' : 'endpoint'}
+  data-endpoint={isDemo ? undefined : contactForm.endpoint}
+  data-email={contact.email}
+  data-subject={f.demo.emailSubject}
+  data-messages={JSON.stringify(f.errors)}
+  aria-describedby="form-required-note"
+>
+  {isDemo && (
+    <p class="quote-form__demo" role="note">
+      <strong>{f.demo.badge}</strong>
+      <span>{f.demo.notice}</span>
+    </p>
+  )}
+
+  <p id="form-required-note" class="quote-form__note">{f.requiredNote}</p>
+
+  <div class="quote-form__error-summary" role="alert" data-error-summary hidden>
+    <Icon name="info" size={20} />
+    <span>{f.errors.summary}</span>
+  </div>
+
+  <div class="quote-form__grid">
+    <div class="field">
+      <label for="qf-name">{f.fields.name.label} <span aria-hidden="true">*</span></label>
+      <input id="qf-name" name="name" type="text" autocomplete={f.fields.name.autocomplete} required maxlength="120" aria-describedby="qf-name-error" />
+      <p class="field__error" id="qf-name-error" data-error-for="name"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-org">{f.fields.organization.label}</label>
+      <input id="qf-org" name="organization" type="text" autocomplete={f.fields.organization.autocomplete} maxlength="160" />
+    </div>
+
+    <div class="field">
+      <label for="qf-phone">{f.fields.phone.label} <span aria-hidden="true">*</span></label>
+      <input id="qf-phone" name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete={f.fields.phone.autocomplete} required maxlength="20" aria-describedby="qf-phone-hint qf-phone-error" />
+      <p class="field__hint" id="qf-phone-hint">{f.fields.phone.hint}</p>
+      <p class="field__error" id="qf-phone-error" data-error-for="phone"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-email">{f.fields.email.label} <span aria-hidden="true">*</span></label>
+      <input id="qf-email" name="email" type="email" dir="ltr" autocomplete={f.fields.email.autocomplete} required maxlength="160" aria-describedby="qf-email-error" />
+      <p class="field__error" id="qf-email-error" data-error-for="email"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-service">{f.fields.service.label} <span aria-hidden="true">*</span></label>
+      <select id="qf-service" name="service" required aria-describedby="qf-service-error">
+        <option value="">{f.fields.service.placeholder}</option>
+        {f.serviceOptions.map((o) => <option value={o}>{o}</option>)}
+      </select>
+      <p class="field__error" id="qf-service-error" data-error-for="service"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-count">{f.fields.beneficiaries.label}</label>
+      <input id="qf-count" name="beneficiaries" type="text" inputmode="numeric" dir="ltr" maxlength="7" aria-describedby="qf-count-hint qf-count-error" />
+      <p class="field__hint" id="qf-count-hint">{f.fields.beneficiaries.hint}</p>
+      <p class="field__error" id="qf-count-error" data-error-for="beneficiaries"></p>
+    </div>
+
+    <div class="field field--full">
+      <label for="qf-message">{f.fields.message.label}</label>
+      <textarea id="qf-message" name="message" rows="5" maxlength="2000" aria-describedby="qf-message-hint"></textarea>
+      <p class="field__hint" id="qf-message-hint">{f.fields.message.hint}</p>
+    </div>
+  </div>
+
+  <button class="btn quote-form__submit" type="submit" data-submit data-label-sending={f.sending}>
+    <Icon name="send" size={18} />
+    <span data-submit-label>{f.submit}</span>
+  </button>
+
+  <div class="quote-form__result" data-result tabindex="-1" hidden>
+    <div data-result-demo hidden>
+      <h3>{f.demo.resultTitle}</h3>
+      <p>{f.demo.resultBody}</p>
+      <div class="quote-form__result-actions">
+        <a class="btn btn--sm" href={`mailto:${contact.email}`} data-mailto>
+          <Icon name="mail" size={18} />{f.demo.emailAction}
+        </a>
+        {phone && (
+          <a class="btn btn--sm btn--outline" href={`tel:${phone.e164}`}>
+            <Icon name="phone" size={18} />{f.demo.callAction}
+          </a>
+        )}
+      </div>
+    </div>
+    <div data-result-success hidden>
+      <h3>{f.success.title}</h3>
+      <p>{f.success.body}</p>
+    </div>
+    <div data-result-error hidden>
+      <p>{f.errors.network}</p>
+    </div>
+  </div>
+
+</form>
+
+<script>
+  type Messages = Record<'required' | 'email' | 'phone' | 'number' | 'summary' | 'network', string>;
+
+  const form = document.querySelector<HTMLFormElement>('[data-quote-form]');
+  if (form) {
+    const messages: Messages = JSON.parse(form.dataset.messages ?? '{}');
+    const summary = form.querySelector<HTMLElement>('[data-error-summary]')!;
+    const result = form.querySelector<HTMLElement>('[data-result]')!;
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const submitLabel = form.querySelector<HTMLElement>('[data-submit-label]')!;
+    const mode = form.dataset.mode;
+
+    // تحويل الأرقام العربية الهندية إلى أرقام غربية قبل التحقق
+    const normalizeDigits = (value: string) =>
+      value.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+
+    const validators: Record<string, (v: string) => string | null> = {
+      name: (v) => (v.trim().length < 2 ? messages.required : null),
+      phone: (v) => {
+        const digits = normalizeDigits(v).replace(/[\s-]/g, '');
+        if (!digits) return messages.required;
+        return /^(?:\+9665|009665|9665|05)\d{8}$/.test(digits) ? null : messages.phone;
+      },
+      email: (v) => {
+        if (!v.trim()) return messages.required;
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? null : messages.email;
+      },
+      service: (v) => (v ? null : messages.required),
+      beneficiaries: (v) => {
+        const n = normalizeDigits(v).trim();
+        if (!n) return null;
+        return /^[1-9]\d*$/.test(n) ? null : messages.number;
+      },
+    };
+
+    const setError = (name: string, message: string | null) => {
+      const field = form.elements.namedItem(name) as HTMLInputElement | null;
+      const slot = form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+      if (!field || !slot) return;
+      slot.textContent = message ?? '';
+      field.setAttribute('aria-invalid', message ? 'true' : 'false');
+    };
+
+    const validateField = (name: string) => {
+      const field = form.elements.namedItem(name) as HTMLInputElement | null;
+      if (!field) return true;
+      const error = validators[name](field.value);
+      setError(name, error);
+      return !error;
+    };
+
+    Object.keys(validators).forEach((name) => {
+      const field = form.elements.namedItem(name) as HTMLInputElement | null;
+      field?.addEventListener('blur', () => { if (field.value) validateField(name); });
+      field?.addEventListener('input', () => { if (field.getAttribute('aria-invalid') === 'true') validateField(name); });
+    });
+
+    const showResult = (kind: 'demo' | 'success' | 'error') => {
+      result.hidden = false;
+      result.querySelectorAll<HTMLElement>('[data-result-demo], [data-result-success], [data-result-error]').forEach((el) => {
+        el.hidden = !el.matches(`[data-result-${kind}]`);
+      });
+      result.focus();
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      result.hidden = true;
+      const invalid = Object.keys(validators).filter((name) => !validateField(name));
+      summary.hidden = invalid.length === 0;
+      if (invalid.length) {
+        (form.elements.namedItem(invalid[0]) as HTMLElement | null)?.focus();
+        return;
+      }
+
+      const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+
+      if (mode !== 'endpoint') {
+        // الوضع التجريبي: لا يُرسل شيء. نجهّز رسالة بريد بالبيانات كبديل مباشر.
+        const lines = [
+          `${form.querySelector('label[for="qf-name"]')?.textContent?.replace('*', '').trim()}: ${data.name}`,
+          `${form.querySelector('label[for="qf-org"]')?.textContent?.trim()}: ${data.organization || '-'}`,
+          `${form.querySelector('label[for="qf-phone"]')?.textContent?.replace('*', '').trim()}: ${data.phone}`,
+          `${form.querySelector('label[for="qf-email"]')?.textContent?.replace('*', '').trim()}: ${data.email}`,
+          `${form.querySelector('label[for="qf-service"]')?.textContent?.replace('*', '').trim()}: ${data.service}`,
+          `${form.querySelector('label[for="qf-count"]')?.textContent?.trim()}: ${data.beneficiaries || '-'}`,
+          '',
+          data.message || '',
+        ];
+        const mailto = form.querySelector<HTMLAnchorElement>('[data-mailto]');
+        if (mailto) {
+          mailto.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(form.dataset.subject ?? '')}&body=${encodeURIComponent(lines.join('\n'))}`;
+        }
+        showResult('demo');
+        return;
+      }
+
+      submit.disabled = true;
+      const original = submitLabel.textContent;
+      submitLabel.textContent = submit.dataset.labelSending ?? original;
+      try {
+        const response = await fetch(form.dataset.endpoint!, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        form.reset();
+        showResult('success');
+      } catch {
+        showResult('error');
+      } finally {
+        submit.disabled = false;
+        submitLabel.textContent = original;
+      }
+    });
+  }
+</script>
+
+<style>
+  .quote-form { display: grid; gap: var(--sp-4); }
+  .quote-form__demo {
+    display: grid; gap: var(--sp-1);
+    padding: var(--sp-4) var(--sp-5);
+    background: #fff8e6; border: 1px solid #ecd28f; border-radius: var(--r-md);
+    font-size: var(--fs-sm); color: #5a4510;
+  }
+  .quote-form__demo strong { color: #7a5a00; }
+  .quote-form__note { font-size: var(--fs-sm); color: var(--c-muted); }
+  .quote-form__error-summary {
+    display: flex; gap: var(--sp-2); align-items: center;
+    padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md);
+    background: var(--c-red-soft); color: var(--c-red-strong); font-weight: 500; font-size: var(--fs-sm);
+  }
+  .quote-form__error-summary[hidden] { display: none; }
+  .quote-form__grid { display: grid; gap: var(--sp-4) var(--sp-5); }
+  @media (min-width: 640px) {
+    .quote-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field--full { grid-column: 1 / -1; }
+  }
+  .field { display: grid; gap: var(--sp-1); align-content: start; }
+  .field label { font-weight: 600; font-size: var(--fs-sm); color: var(--c-char); }
+  .field label span { color: var(--c-red); }
+  .field input, .field select, .field textarea {
+    width: 100%; min-height: 48px;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--c-line-strong); border-radius: var(--r-md);
+    background: #fff; font-size: var(--fs-base); line-height: 1.5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input[dir='ltr'] { text-align: right; }
+  :global([dir='ltr']) .field input[dir='ltr'] { text-align: left; }
+  .field textarea { resize: vertical; min-height: 130px; }
+  .field input:hover, .field select:hover, .field textarea:hover { border-color: var(--c-muted); }
+  .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+    outline: none; border-color: var(--c-char); box-shadow: 0 0 0 3px rgb(187 31 37 / 0.25);
+  }
+  .field [aria-invalid='true'] { border-color: var(--c-red); background: #fffafa; }
+  .field__hint { font-size: var(--fs-xs); color: var(--c-muted); }
+  .field__error { font-size: var(--fs-xs); font-weight: 600; color: var(--c-red-strong); min-height: 0; }
+  .field__error:empty { display: none; }
+  .quote-form__submit { justify-self: start; min-width: 200px; }
+  .quote-form__submit:disabled { opacity: 0.7; cursor: progress; }
+  @media (max-width: 479px) { .quote-form__submit { justify-self: stretch; } }
+
+  .quote-form__result {
+    padding: var(--sp-5); border-radius: var(--r-md);
+    background: var(--c-mist); border-inline-start: 4px solid var(--c-char);
+  }
+  .quote-form__result:focus { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .quote-form__result h3 { font-size: var(--fs-h4); }
+  .quote-form__result p { margin-block-start: var(--sp-2); color: var(--c-text); }
+  .quote-form__result-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-block-start: var(--sp-4); }
+</style>

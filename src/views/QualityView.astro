@@ -1,0 +1,136 @@
+---
+/**
+ * صفحة الجودة والسلامة. المحتوى من src/content/{locale}/quality.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import Media from '../components/ui/Media.astro';
+import Icon from '../components/ui/Icon.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import { images } from '../config/images';
+import { formatNumber } from '../lib/experience';
+import type { Locale } from '../i18n/locales';
+import { getContent } from '../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { qualityPage: q } = getContent(locale);
+---
+
+<BaseLayout locale={locale} page="quality" title={q.meta.title} description={q.meta.description}>
+  <PageHero locale={locale} title={q.hero.title} lead={q.hero.lead} />
+
+  <!-- الشهادات والتأهيل -->
+  <section class="section" aria-labelledby="credentials-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="credentials-title">{q.credentials.title}</h2>
+      </div>
+      <ul class="credentials" role="list">
+        {q.credentials.items.map((c) => (
+          <li>
+            <span class="credentials__icon"><Icon name={c.icon} size={26} /></span>
+            <h3>{c.title}</h3>
+            <p>{c.body}</p>
+          </li>
+        ))}
+      </ul>
+      <div class="capacity">
+        <h3>{q.credentials.capacity.title}</h3>
+        <dl>
+          {q.credentials.capacity.items.map((item) => (
+            <div>
+              <dt>{item.label}</dt>
+              <dd><span class="ltr">{formatNumber(item.value)}</span></dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- السياسة والتدريب -->
+  <section class="section section--mist" aria-labelledby="policy-title">
+    <div class="container policy">
+      <div>
+        <h2 id="policy-title">{q.policy.title}</h2>
+        <ul class="check-list policy__list" role="list">
+          {q.policy.items.map((item) => <li><Icon name="check" size={18} strokeWidth={2.25} /><span>{item}</span></li>)}
+        </ul>
+        <div class="training">
+          <h3>{q.training.title}</h3>
+          <p>{q.training.intro}</p>
+          <ul role="list">
+            {q.training.items.map((item) => <li><Icon name="graduationCap" size={20} /><span>{item}</span></li>)}
+          </ul>
+        </div>
+      </div>
+      <div class="policy__media">
+        <Media image={images.quality.main} ratio="4 / 5" sizes="(min-width: 1024px) 440px, 100vw" class="policy__photo" />
+      </div>
+    </div>
+  </section>
+
+  <!-- الممارسات اليومية -->
+  <section class="section" aria-labelledby="practices-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="practices-title">{q.practices.title}</h2>
+      </div>
+      <ul class="practices" role="list">
+        {q.practices.items.map((item) => (
+          <li>
+            <Icon name={item.icon} size={28} />
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<style>
+  .credentials { display: grid; gap: var(--sp-5); padding: 0; }
+  @media (min-width: 900px) { .credentials { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .credentials li { padding: var(--sp-6) var(--sp-5); border: 1px solid var(--c-line); border-radius: var(--r-md); border-block-start: 3px solid var(--c-red); }
+  .credentials__icon {
+    display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--c-red-soft); color: var(--c-red); margin-block-end: var(--sp-4);
+  }
+  .credentials h3 { font-size: var(--fs-h3); }
+  .credentials p { margin-block-start: var(--sp-2); color: var(--c-muted); line-height: 1.85; }
+
+  .capacity {
+    margin-block-start: var(--sp-6);
+    display: grid; gap: var(--sp-4) var(--sp-7); align-items: center;
+    padding: var(--sp-6); background: var(--c-char); color: var(--c-on-dark); border-radius: var(--r-md);
+  }
+  @media (min-width: 900px) { .capacity { grid-template-columns: minmax(0, 1fr) auto; } }
+  .capacity h3 { color: #fff; font-size: var(--fs-h4); max-width: 34ch; }
+  .capacity dl { display: flex; flex-wrap: wrap; gap: var(--sp-5) var(--sp-8); }
+  .capacity dl > div { display: flex; flex-direction: column-reverse; }
+  .capacity dt { color: var(--c-on-dark-muted); font-size: var(--fs-sm); }
+  .capacity dd { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h2); color: #fff; line-height: 1.3; }
+
+  .policy { display: grid; gap: clamp(2rem, 1.5rem + 3vw, 4.5rem); align-items: start; }
+  @media (min-width: 1024px) { .policy { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); } }
+  .policy h2 { font-size: var(--fs-h2); }
+  .policy__list { margin-block-start: var(--sp-5); max-width: 62ch; }
+  .policy__media :global(.policy__photo) { border-radius: var(--r-md); }
+  .training { margin-block-start: var(--sp-7); padding: var(--sp-5) var(--sp-6); background: #fff; border-radius: var(--r-md); border: 1px solid var(--c-line); }
+  .training h3 { font-size: var(--fs-h3); }
+  .training > p { margin-block: var(--sp-2) var(--sp-4); color: var(--c-muted); }
+  .training ul { display: grid; gap: var(--sp-3); padding: 0; }
+  .training li { display: flex; gap: var(--sp-3); align-items: center; font-weight: 500; color: var(--c-char); }
+  .training :global(.icon) { color: var(--c-red); }
+
+  .practices { display: grid; gap: var(--sp-6) var(--sp-7); padding: 0; }
+  @media (min-width: 720px) { .practices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .practices li { padding-block-start: var(--sp-5); border-block-start: 1px solid var(--c-line-strong); }
+  .practices :global(.icon) { color: var(--c-red); }
+  .practices h3 { font-size: var(--fs-h3); margin-block: var(--sp-3) var(--sp-2); }
+  .practices p { color: var(--c-muted); line-height: 1.85; max-width: 60ch; }
+</style>

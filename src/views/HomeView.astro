@@ -1,0 +1,160 @@
+---
+/**
+ * الصفحة الرئيسية. المحتوى من src/content/{locale}/home.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeHero from '../components/home/HomeHero.astro';
+import ServiceCards from '../components/sections/ServiceCards.astro';
+import SeasonLedger from '../components/sections/SeasonLedger.astro';
+import ProcessSteps from '../components/sections/ProcessSteps.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import Media from '../components/ui/Media.astro';
+import Icon from '../components/ui/Icon.astro';
+import { images, gallery } from '../config/images';
+import { routes } from '../config/navigation';
+import { localizedPath, type Locale } from '../i18n/locales';
+import { getContent } from '../content';
+import type { IconName } from '../components/ui/icons';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { homePage } = getContent(locale);
+const galleryPreview = gallery.filter((g) => g.src).slice(0, 5);
+---
+
+<BaseLayout locale={locale} page="home" title={homePage.meta.title} description={homePage.meta.description}>
+  <HomeHero locale={locale} />
+
+  <!-- من نحن -->
+  <section class="section intro" aria-labelledby="intro-title">
+    <div class="container intro__grid">
+      <div class="intro__media">
+        <Media image={images.about.main} ratio="5 / 4" sizes="(min-width: 1024px) 520px, 100vw" class="intro__photo" />
+      </div>
+      <div class="intro__text">
+        <p class="section-label">{homePage.intro.label}</p>
+        <h2 id="intro-title">{homePage.intro.title}</h2>
+        {homePage.intro.body.map((p) => <p class="intro__p">{p}</p>)}
+        <div class="intro__values">
+          <h3 class="visually-hidden">{homePage.intro.valuesLabel}</h3>
+          <ul role="list">
+            {homePage.intro.values.map((v) => <li>{v}</li>)}
+          </ul>
+        </div>
+        <a class="text-link" href={localizedPath(routes.about, locale)}>{homePage.intro.cta}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- الخدمات -->
+  <section class="section section--mist" aria-labelledby="services-title">
+    <div class="container">
+      <div class="section-head section-head--row">
+        <div>
+          <h2 id="services-title">{homePage.services.title}</h2>
+          <p>{homePage.services.intro}</p>
+        </div>
+        <a class="text-link" href={localizedPath(routes.services, locale)}>{homePage.services.cta}</a>
+      </div>
+      <ServiceCards locale={locale} />
+    </div>
+  </section>
+
+  <!-- سجل المواسم -->
+  <SeasonLedger locale={locale} title={homePage.ledger.title} />
+
+  <!-- مراحل العمل -->
+  <ProcessSteps locale={locale} title={homePage.process.title} intro={homePage.process.intro} />
+
+  <!-- الجودة -->
+  <section class="section section--mist" aria-labelledby="quality-title">
+    <div class="container quality__grid">
+      <div class="quality__text">
+        <h2 id="quality-title">{homePage.quality.title}</h2>
+        <p class="quality__intro">{homePage.quality.intro}</p>
+        <ul class="quality__items" role="list">
+          {homePage.quality.items.map((item) => (
+            <li>
+              <span class="quality__icon"><Icon name={item.icon as IconName} size={24} /></span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <a class="text-link" href={localizedPath(routes.quality, locale)}>{homePage.quality.cta}</a>
+      </div>
+      <Media image={images.quality.main} ratio="4 / 5" sizes="(min-width: 1024px) 440px, 100vw" class="quality__photo" />
+    </div>
+  </section>
+
+  <!-- معرض مختصر -->
+  <section class="section" aria-labelledby="gallery-title">
+    <div class="container">
+      <div class="section-head section-head--row">
+        <h2 id="gallery-title">{homePage.gallery.title}</h2>
+        <a class="text-link" href={localizedPath(routes.gallery, locale)}>{homePage.gallery.cta}</a>
+      </div>
+      <ul class="mosaic" role="list">
+        {galleryPreview.map((item, i) => (
+          <li class={`mosaic__item mosaic__item--${i + 1}`}>
+            <Media image={item} ratio="auto" sizes={i === 0 ? '(min-width: 1024px) 600px, 100vw' : '(min-width: 1024px) 300px, 50vw'} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<style>
+  .intro__grid { display: grid; gap: clamp(2rem, 1.5rem + 3vw, 4.5rem); align-items: center; }
+  @media (min-width: 1024px) { .intro__grid { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); } }
+  .intro__media :global(.intro__photo) { border-radius: var(--r-md); }
+  .intro h2 { font-size: var(--fs-h2); max-width: 18ch; }
+  .intro__p { margin-block-start: var(--sp-4); max-width: 60ch; }
+  .intro__values ul {
+    display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5);
+    padding: 0; margin-block: var(--sp-6);
+    padding-block: var(--sp-4);
+    border-block: 1px solid var(--c-line);
+  }
+  .intro__values li {
+    font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h3); color: var(--c-char);
+  }
+  .intro__values li + li::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--c-red); vertical-align: middle; margin-inline-end: var(--sp-5);
+  }
+  @media (max-width: 1023px) { .intro__media { order: 2; } }
+
+  .quality__grid { display: grid; gap: clamp(2rem, 1.5rem + 3vw, 4.5rem); align-items: center; }
+  @media (min-width: 1024px) { .quality__grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); } }
+  .quality__text h2 { font-size: var(--fs-h2); }
+  .quality__intro { margin-block-start: var(--sp-3); color: var(--c-muted); font-size: var(--fs-lead); max-width: 56ch; }
+  .quality__items { display: grid; gap: var(--sp-5); padding: 0; margin-block: var(--sp-6); }
+  .quality__items li { display: flex; gap: var(--sp-4); align-items: flex-start; }
+  .quality__icon {
+    display: inline-grid; place-items: center; flex-shrink: 0;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #fff; color: var(--c-red); border: 1px solid var(--c-line);
+  }
+  .quality__items h3 { font-size: var(--fs-h4); }
+  .quality__items p { color: var(--c-muted); font-size: var(--fs-sm); margin-block-start: 0.15rem; }
+  .quality__grid :global(.quality__photo) { border-radius: var(--r-md); }
+
+  .mosaic {
+    display: grid; gap: var(--sp-3); padding: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: clamp(140px, 22vw, 230px);
+  }
+  .mosaic__item { overflow: hidden; border-radius: var(--r-md); }
+  .mosaic__item :global(.media) { height: 100%; aspect-ratio: auto; }
+  .mosaic__item--1 { grid-column: span 2; grid-row: span 2; }
+  @media (min-width: 900px) {
+    .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .mosaic__item--1 { grid-column: span 2; grid-row: span 2; }
+  }
+</style>

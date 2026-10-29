@@ -1,0 +1,187 @@
+---
+/**
+ * صفحة «من نحن». المحتوى من src/content/{locale}/about.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import Media from '../components/ui/Media.astro';
+import Icon from '../components/ui/Icon.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import { images } from '../config/images';
+import type { Locale } from '../i18n/locales';
+import { getContent } from '../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { aboutPage: a } = getContent(locale);
+---
+
+<BaseLayout locale={locale} page="about" title={a.meta.title} description={a.meta.description}>
+  <PageHero locale={locale} title={a.hero.title} lead={a.hero.lead} />
+
+  <!-- النبذة -->
+  <section class="section" aria-labelledby="story-title">
+    <div class="container story">
+      <div class="story__text">
+        <h2 id="story-title">{a.story.title}</h2>
+        {a.story.paragraphs.map((p) => <p>{p}</p>)}
+        <dl class="facts">
+          {a.story.facts.map((f) => (
+            <div>
+              <dt>{f.label}</dt>
+              <dd>{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div class="story__media">
+        <Media image={images.about.facility} ratio="4 / 3" sizes="(min-width: 1024px) 520px, 100vw" class="story__photo" />
+        <Media image={images.about.team} ratio="4 / 3" sizes="(min-width: 1024px) 300px, 60vw" class="story__photo story__photo--inset" />
+      </div>
+    </div>
+  </section>
+
+  <!-- الالتزام -->
+  <section class="section section--dark commitment" aria-label={a.commitment.source}>
+    <div class="container commitment__inner">
+      <figure>
+        <blockquote>
+          <p>«{a.commitment.quote}»</p>
+        </blockquote>
+        <figcaption>{a.commitment.source}</figcaption>
+      </figure>
+      <p class="commitment__body">{a.commitment.body}</p>
+    </div>
+  </section>
+
+  <!-- الرؤية والرسالة والقيم والأهداف -->
+  <section class="section" aria-label={`${a.vision.title}، ${a.mission.title}، ${a.values.title}، ${a.goals.title}`}>
+    <div class="container pillars">
+      <article class="pillar pillar--vision">
+        <h2>{a.vision.title}</h2>
+        <p>{a.vision.body}</p>
+      </article>
+      <article class="pillar">
+        <h2>{a.mission.title}</h2>
+        <ul class="check-list" role="list">
+          {a.mission.items.map((m) => <li><Icon name="check" size={18} strokeWidth={2.25} /><span>{m}</span></li>)}
+        </ul>
+      </article>
+      <article class="pillar">
+        <h2>{a.goals.title}</h2>
+        <ul class="check-list" role="list">
+          {a.goals.items.map((g) => <li><Icon name="check" size={18} strokeWidth={2.25} /><span>{g}</span></li>)}
+        </ul>
+      </article>
+      <article class="pillar pillar--values">
+        <h2>{a.values.title}</h2>
+        <ul role="list" class="values">
+          {a.values.items.map((v) => <li>{v}</li>)}
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- الهيكل الإداري -->
+  <section class="section section--mist" aria-labelledby="structure-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="structure-title">{a.structure.title}</h2>
+        <p>{a.structure.intro}</p>
+      </div>
+
+      <div class="org">
+        <div class="org__node org__node--head">
+          <h3>{a.structure.head.title}</h3>
+          <ul role="list">{a.structure.head.duties.map((d) => <li>{d}</li>)}</ul>
+        </div>
+        <div class="org__managers">
+          {a.structure.managers.map((m) => (
+            <div class="org__node org__node--manager">
+              <h3>{m.title}</h3>
+              <ul role="list">{m.duties.map((d) => <li>{d}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+        <ul class="org__teams" role="list">
+          {a.structure.teams.map((team) => (
+            <li class="org__node">
+              <h3>{team.title}</h3>
+              <p>{team.duty}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<style>
+  .story { display: grid; gap: clamp(2rem, 1.5rem + 3vw, 4.5rem); align-items: center; }
+  @media (min-width: 1024px) { .story { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .story__text h2 { font-size: var(--fs-h2); margin-block-end: var(--sp-4); }
+  .story__text > p + p { margin-block-start: var(--sp-4); }
+  .story__text > p { max-width: 62ch; }
+  .facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-4);
+    margin-block-start: var(--sp-6); padding-block-start: var(--sp-5);
+    border-block-start: 1px solid var(--c-line);
+  }
+  .facts dt { font-size: var(--fs-sm); color: var(--c-muted); }
+  .facts dd { margin: 0; font-family: var(--f-display); font-weight: 700; color: var(--c-char); font-size: var(--fs-h4); line-height: 1.6; }
+
+  .story__media { position: relative; padding-block-end: 18%; padding-inline-end: 10%; }
+  .story__media :global(.story__photo) { border-radius: var(--r-md); }
+  .story__media :global(.story__photo--inset) {
+    position: absolute; inset-block-end: 0; inset-inline-end: 0; width: 55%;
+    border: 6px solid #fff; box-shadow: 0 18px 40px -22px rgb(46 49 50 / 0.6);
+  }
+
+  .commitment__inner { display: grid; gap: var(--sp-5) var(--sp-8); align-items: center; }
+  @media (min-width: 900px) { .commitment__inner { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); } }
+  .commitment figure { margin: 0; border-inline-start: 3px solid var(--c-red); padding-inline-start: var(--sp-5); }
+  .commitment blockquote p {
+    font-family: var(--f-display); font-weight: 700; color: #fff;
+    font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.4rem); line-height: 1.6;
+  }
+  .commitment figcaption { margin-block-start: var(--sp-3); color: var(--c-on-dark-muted); font-size: var(--fs-sm); }
+  .commitment__body { color: var(--c-on-dark-muted); font-size: var(--fs-lead); line-height: 1.95; }
+
+  .pillars { display: grid; gap: var(--sp-7) var(--sp-8); }
+  @media (min-width: 900px) { .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .pillar h2 {
+    font-size: var(--fs-h3); padding-block-end: var(--sp-3); margin-block-end: var(--sp-4);
+    border-block-end: 2px solid var(--c-red); display: inline-block;
+  }
+  .pillar--vision p { font-size: var(--fs-lead); line-height: 1.95; color: var(--c-char); }
+  .values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); padding: 0; }
+  .values li {
+    font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h3); color: var(--c-char);
+    padding: var(--sp-4) var(--sp-5); background: var(--c-mist); border-radius: var(--r-md);
+    border-inline-start: 3px solid var(--c-red);
+  }
+
+  .org { display: grid; gap: var(--sp-5); }
+  .org__node {
+    background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md);
+    padding: var(--sp-5);
+  }
+  .org__node h3 { font-size: var(--fs-h4); }
+  .org__node ul { display: grid; gap: var(--sp-1); padding: 0; margin-block-start: var(--sp-2); font-size: var(--fs-sm); color: var(--c-muted); }
+  .org__node li::before { content: '—'; color: var(--c-red); margin-inline-end: var(--sp-2); }
+  .org__node p { margin-block-start: var(--sp-2); font-size: var(--fs-sm); color: var(--c-muted); line-height: 1.8; }
+  .org__node--head { background: var(--c-char); border-color: var(--c-char); }
+  .org__node--head h3 { color: #fff; }
+  .org__node--head ul { color: var(--c-on-dark-muted); }
+  @media (min-width: 720px) {
+    .org__node--head ul { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-6); }
+  }
+  .org__node--manager { border-block-start: 3px solid var(--c-red); }
+  .org__managers { display: grid; gap: var(--sp-5); }
+  @media (min-width: 720px) { .org__managers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .org__teams { display: grid; gap: var(--sp-4); padding: 0; }
+  @media (min-width: 640px) { .org__teams { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .org__teams { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>

@@ -1,0 +1,65 @@
+# نشر الموقع على GitHub Pages تلقائيًا عند كل دفع (push) إلى الفرع main.
+# يحدد سير العمل عنوان الموقع والمسار الأساسي من اسم الحساب والمستودع تلقائيًا:
+#   - مستودع باسم <الحساب>.github.io  ← https://<الحساب>.github.io/
+#   - أي مستودع آخر                      ← https://<الحساب>.github.io/<اسم المستودع>/
+#   - عند وجود الملف public/CNAME        ← النطاق المكتوب فيه، دون مسار فرعي
+# تفعيل لمرة واحدة: Settings ← Pages ← Source: GitHub Actions
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Determine site URL and base path
+        shell: bash
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          if [ -s public/CNAME ]; then
+            DOMAIN="$(head -n1 public/CNAME | tr -d '[:space:]')"
+            SITE_URL="https://${DOMAIN}"
+            BASE_PATH=""
+          elif [ "${REPO,,}" = "${OWNER}.github.io" ]; then
+            SITE_URL="https://${OWNER}.github.io"
+            BASE_PATH=""
+          else
+            SITE_URL="https://${OWNER}.github.io"
+            BASE_PATH="/${REPO}"
+          fi
+          echo "SITE_URL=${SITE_URL}" >> "$GITHUB_ENV"
+          echo "BASE_PATH=${BASE_PATH}" >> "$GITHUB_ENV"
+          echo "Site: ${SITE_URL}${BASE_PATH}/"
+
+      - name: Install, build and upload
+        uses: withastro/action@v6
+        with:
+          node-version: 22
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

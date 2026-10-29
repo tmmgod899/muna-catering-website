@@ -1,0 +1,158 @@
+---
+/**
+ * الواجهة الرئيسية للصفحة الأولى: العنوان، والتعريف المختصر، وأزرار الإجراء، وصور المطبخ مع حلقة الشعار.
+ */
+import Media from '../ui/Media.astro';
+import Icon from '../ui/Icon.astro';
+import { images } from '../../config/images';
+import { routes } from '../../config/navigation';
+import { localizedPath, type Locale } from '../../i18n/locales';
+import { getContent } from '../../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { homePage } = getContent(locale);
+const hero = homePage.hero;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <p class="hero__kicker">{hero.kicker}</p>
+      <h1 id="hero-title">{hero.title}</h1>
+      <p class="hero__lead">{hero.lead}</p>
+      <div class="hero__actions">
+        <a class="btn" href={localizedPath(`${routes.contact}#quote`, locale)}>{hero.primaryCta}</a>
+        <a class="btn btn--outline" href={localizedPath(routes.services, locale)}>{hero.secondaryCta}</a>
+      </div>
+      <ul class="hero__assurances check-list" role="list">
+        {hero.assurances.map((item) => (
+          <li><Icon name="check" size={18} strokeWidth={2.25} /><span>{item}</span></li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="hero__media">
+      <svg class="hero__ring" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+        <circle cx="100" cy="100" r="96" pathLength="100" />
+      </svg>
+      <figure class="hero__main">
+        <Media
+          image={images.hero.main}
+          ratio="4 / 5"
+          sizes="(min-width: 1024px) 420px, (min-width: 640px) 60vw, 80vw"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <figcaption>{hero.imageCaption}</figcaption>
+      </figure>
+      <figure class="hero__inset">
+        <Media image={images.hero.secondary} ratio="4 / 3" sizes="(min-width: 1024px) 300px, 45vw" />
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem) clamp(3.5rem, 2.5rem + 4vw, 6rem);
+    overflow: hidden;
+    background:
+      linear-gradient(to left, transparent 0 58%, var(--c-mist) 58% 100%);
+  }
+  :global([dir='ltr']) .hero { background: linear-gradient(to right, transparent 0 58%, var(--c-mist) 58% 100%); }
+  @media (max-width: 1023px) {
+    .hero, :global([dir='ltr']) .hero { background: var(--c-paper); }
+  }
+
+  .hero__grid {
+    display: grid; gap: clamp(2.5rem, 2rem + 3vw, 4rem);
+    align-items: center;
+  }
+  @media (min-width: 1024px) {
+    .hero__grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+  }
+
+  .hero__kicker {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-weight: 600; font-size: var(--fs-sm); color: var(--c-red);
+    margin-block-end: var(--sp-4);
+  }
+  .hero__kicker::before { content: ''; width: 28px; height: 2px; background: currentColor; }
+  .hero h1 {
+    font-size: var(--fs-display);
+    font-weight: 800;
+    line-height: 1.38;
+  }
+  .hero__lead {
+    margin-block-start: var(--sp-5);
+    font-size: var(--fs-lead);
+    color: var(--c-muted);
+    line-height: 1.9;
+    max-width: 54ch;
+  }
+  .hero__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-block-start: var(--sp-6); }
+  .hero__assurances {
+    margin-block-start: var(--sp-6);
+    padding-block-start: var(--sp-5);
+    border-block-start: 1px solid var(--c-line);
+    font-size: var(--fs-sm);
+    max-width: 54ch;
+  }
+  @media (max-width: 479px) {
+    .hero__actions .btn { flex: 1 1 100%; }
+  }
+
+  .hero__media {
+    position: relative;
+    justify-self: center;
+    width: min(100%, 470px);
+    padding-block-end: 12%;
+    padding-inline-end: 14%;
+  }
+  .hero__ring {
+    position: absolute;
+    width: 118%;
+    inset-inline-start: -2%;
+    top: -9%;
+    fill: none;
+    stroke: var(--c-red);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 84 16;
+    transform: rotate(-58deg);
+    pointer-events: none;
+  }
+  .hero__main { position: relative; margin: 0; }
+  .hero__main :global(.media) { border-radius: var(--r-md); box-shadow: 0 30px 60px -35px rgb(46 49 50 / 0.55); }
+  .hero__main figcaption {
+    position: absolute; inset-block-end: var(--sp-4); inset-inline-start: var(--sp-4);
+    background: rgb(255 255 255 / 0.94);
+    color: var(--c-char); font-size: var(--fs-xs); font-weight: 600;
+    padding: 0.25rem 0.75rem; border-radius: var(--r-sm);
+  }
+  .hero__inset {
+    position: absolute; margin: 0;
+    inset-block-end: 0; inset-inline-end: 0;
+    width: 52%;
+    border: 6px solid #fff;
+    border-radius: var(--r-md);
+    box-shadow: 0 18px 40px -22px rgb(46 49 50 / 0.6);
+    overflow: hidden;
+  }
+
+  /* حركة الافتتاح: رسم الحلقة ثم ظهور الصور */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__ring { animation: ring-draw 1.6s var(--ease-out) 0.2s both; }
+    .hero__main, .hero__inset { animation: rise 0.9s var(--ease-out) both; }
+    .hero__inset { animation-delay: 0.35s; }
+    .hero__text > * { animation: rise 0.8s var(--ease-out) both; }
+    .hero__text > :nth-child(2) { animation-delay: 0.08s; }
+    .hero__text > :nth-child(3) { animation-delay: 0.16s; }
+    .hero__text > :nth-child(4) { animation-delay: 0.24s; }
+    .hero__text > :nth-child(5) { animation-delay: 0.32s; }
+  }
+  @keyframes ring-draw { from { stroke-dasharray: 0 100; } to { stroke-dasharray: 84 16; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+</style>

@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { company } from '../config/site';
+import { t } from '../i18n/ui';
+import { localizedPath } from '../i18n/locales';
+
+const ui = t('ar');
+---
+
+<BaseLayout locale="ar" title={`${ui.notFound.title} | ${company.brandName}`} description={ui.notFound.body} noindex>
+  <section class="section not-found">
+    <div class="container">
+      <p class="not-found__code" aria-hidden="true">404</p>
+      <h1>{ui.notFound.title}</h1>
+      <p>{ui.notFound.body}</p>
+      <a class="btn" href={localizedPath('/', 'ar')}>{ui.notFound.back}</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found { text-align: center; min-height: 50vh; display: grid; place-items: center; }
+  .not-found__code { font-family: var(--f-display); font-weight: 800; font-size: clamp(4rem, 3rem + 6vw, 8rem); color: var(--c-red); line-height: 1; }
+  .not-found h1 { font-size: var(--fs-h2); margin-block: var(--sp-3); }
+  .not-found p:not(.not-found__code) { color: var(--c-muted); margin-block-end: var(--sp-6); }
+</style>

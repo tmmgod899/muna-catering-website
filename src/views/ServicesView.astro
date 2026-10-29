@@ -1,0 +1,156 @@
+---
+/**
+ * صفحة الخدمات. المحتوى من src/content/{locale}/services.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import Media from '../components/ui/Media.astro';
+import Icon from '../components/ui/Icon.astro';
+import ProcessSteps from '../components/sections/ProcessSteps.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import { images } from '../config/images';
+import { formatNumber } from '../lib/experience';
+import type { Locale } from '../i18n/locales';
+import { getContent } from '../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const { servicesPage: p, serviceAreas, mealSolutions, nutrition, logistics } = getContent(locale);
+---
+
+<BaseLayout locale={locale} page="services" title={p.meta.title} description={p.meta.description}>
+  <PageHero locale={locale} title={p.hero.title} lead={p.hero.lead} />
+
+  <!-- مجالات الخدمة -->
+  <section class="section" aria-labelledby="areas-title">
+    <div class="container">
+      <h2 id="areas-title" class="visually-hidden">{p.areasTitle}</h2>
+      <div class="areas">
+        {serviceAreas.map((area, i) => (
+          <article class:list={['area', i % 2 === 1 && 'area--flip']} id={area.key}>
+            <Media
+              image={images.services[area.key]}
+              ratio="4 / 3"
+              sizes="(min-width: 1024px) 560px, 100vw"
+              class="area__media"
+            />
+            <div class="area__text">
+              <h3>{area.title}</h3>
+              <p>{area.summary}</p>
+              <ul class="check-list" role="list">
+                {area.points.map((pt) => <li><Icon name="check" size={18} strokeWidth={2.25} /><span>{pt}</span></li>)}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- أنواع الوجبات -->
+  <section class="section section--mist" aria-labelledby="solutions-title" id="meals">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="solutions-title">{p.solutionsTitle}</h2>
+        <p>{p.solutionsIntro}</p>
+      </div>
+      <ul class="solutions" role="list">
+        {mealSolutions.map((m) => (
+          <li class="solution">
+            <Media image={images.services[m.key]} ratio="16 / 10" sizes="(min-width: 1024px) 380px, 100vw" />
+            <div class="solution__body">
+              <span class="solution__icon"><Icon name={m.icon} size={22} /></span>
+              <h3>{m.title}</h3>
+              <p>{m.summary}</p>
+              <ul role="list">
+                {m.details.map((d) => <li>{d}</li>)}
+              </ul>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <aside class="nutrition">
+        <Icon name="info" size={26} />
+        <div>
+          <h3>{nutrition.title}</h3>
+          <p>{nutrition.body}</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <ProcessSteps locale={locale} title={p.processTitle} intro={p.processIntro} />
+
+  <!-- التجهيزات والنقل -->
+  <section class="section section--mist" aria-labelledby="logistics-title">
+    <div class="container logistics">
+      <Media image={images.services.logistics} ratio="4 / 3" sizes="(min-width: 1024px) 520px, 100vw" class="logistics__media" />
+      <div>
+        <h2 id="logistics-title">{logistics.title}</h2>
+        <p class="logistics__intro">{logistics.intro}</p>
+        <dl class="logistics__list">
+          {logistics.items.map((item) => (
+            <div>
+              <dt>{item.label}</dt>
+              <dd>{formatNumber(item.value)}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<style>
+  .areas { display: grid; gap: clamp(3rem, 2rem + 4vw, 5.5rem); }
+  .area { display: grid; gap: var(--sp-6) clamp(2rem, 1rem + 4vw, 5rem); align-items: center; scroll-margin-top: calc(var(--header-h) + 24px); }
+  @media (min-width: 900px) {
+    .area { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .area--flip :global(.area__media) { order: 2; }
+  }
+  .area :global(.area__media) { border-radius: var(--r-md); }
+  .area h3 { font-size: var(--fs-h2); }
+  .area__text > p { margin-block: var(--sp-3) var(--sp-5); color: var(--c-muted); font-size: var(--fs-lead); line-height: 1.85; max-width: 52ch; }
+
+  .solutions { display: grid; gap: var(--sp-5); padding: 0; }
+  @media (min-width: 900px) { .solutions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .solution { background: #fff; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--c-line); display: flex; flex-direction: column; }
+  .solution__body { position: relative; padding: var(--sp-6) var(--sp-5) var(--sp-5); }
+  .solution__icon {
+    position: absolute; top: 0; inset-inline-start: var(--sp-5); transform: translateY(-50%);
+    display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+    background: var(--c-red); color: #fff; border: 3px solid #fff;
+  }
+  .solution h3 { font-size: var(--fs-h3); }
+  .solution p { margin-block: var(--sp-2) var(--sp-4); color: var(--c-muted); font-size: var(--fs-sm); line-height: 1.85; }
+  .solution ul { display: grid; gap: var(--sp-2); padding: 0; padding-block-start: var(--sp-4); border-block-start: 1px solid var(--c-line); font-size: var(--fs-sm); }
+  .solution ul li { display: flex; gap: var(--sp-2); }
+  .solution ul li::before { content: ''; flex-shrink: 0; width: 6px; height: 6px; margin-block-start: 0.7em; border-radius: 50%; background: var(--c-red); }
+
+  .nutrition {
+    display: flex; gap: var(--sp-4); align-items: flex-start;
+    margin-block-start: var(--sp-6);
+    padding: var(--sp-5) var(--sp-6);
+    background: #fff; border-radius: var(--r-md);
+    border-inline-start: 4px solid var(--c-red);
+  }
+  .nutrition > :global(.icon) { color: var(--c-red); margin-block-start: 0.2em; }
+  .nutrition h3 { font-size: var(--fs-h4); }
+  .nutrition p { margin-block-start: var(--sp-1); color: var(--c-muted); max-width: 90ch; }
+
+  .logistics { display: grid; gap: clamp(2rem, 1.5rem + 3vw, 4.5rem); align-items: center; }
+  @media (min-width: 1024px) { .logistics { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .logistics :global(.logistics__media) { border-radius: var(--r-md); }
+  .logistics h2 { font-size: var(--fs-h2); }
+  .logistics__intro { margin-block-start: var(--sp-3); color: var(--c-muted); max-width: 58ch; }
+  .logistics__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); margin-block-start: var(--sp-6); }
+  .logistics__list > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; padding-block-start: var(--sp-3); border-block-start: 2px solid var(--c-red); }
+  .logistics__list dt { font-size: var(--fs-sm); color: var(--c-muted); line-height: 1.6; }
+  .logistics__list dd { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h2); color: var(--c-char); line-height: 1.3; }
+  @media (min-width: 640px) and (max-width: 899px) {
+    .solution { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+    .solution > :global(.media) { aspect-ratio: auto; height: 100%; min-height: 220px; }
+  }
+</style>

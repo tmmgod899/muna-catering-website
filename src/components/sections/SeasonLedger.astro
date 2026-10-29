@@ -1,0 +1,181 @@
+---
+/**
+ * «سجل المواسم»: رسم بياني يمثل كل مشروع موثق بخيمة، مجمّعًا حسب الموسم الهجري.
+ * البيانات مشتقة بالكامل من سجل الخبرات (src/content/ar/experience.ts).
+ */
+import { getContent } from '../../content';
+import { summarizeBySeason, experienceStats, arabicCount, type ExperienceRecord } from '../../lib/experience';
+import { routes } from '../../config/navigation';
+import { localizedPath, type Locale } from '../../i18n/locales';
+import { t } from '../../i18n/ui';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  showLink?: boolean;
+  headingLevel?: 'h2' | 'h3';
+}
+const { locale, title, showLink = true } = Astro.props;
+const ui = t(locale);
+const { experienceRecords, homePage } = getContent(locale);
+const seasons = summarizeBySeason(experienceRecords);
+const stats = experienceStats(experienceRecords);
+
+const projectForms = { one: 'مشروع واحد', two: 'مشروعان', few: 'مشاريع', many: 'مشروعًا' };
+const joinAr = (items: string[]) => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(' و')} و${items[items.length - 1]}`;
+const total = arabicCount(stats.totalProjects, projectForms);
+const totalAdj = stats.totalProjects % 100 >= 3 && stats.totalProjects % 100 <= 10 ? 'موثقة' : 'موثقًا';
+const groups = [...stats.countries, ...(stats.servesDomestic ? ['حجاج الداخل'] : [])];
+const summary = `${total} ${totalAdj} بين عامي ${stats.firstSeason} و${stats.lastSeason}${ui.hijriSuffix} في مكة المكرمة والمشاعر المقدسة، خدمنا فيها حجاجًا من ${joinAr(groups)}.`;
+
+const order = (records: ExperienceRecord[]) =>
+  [...records].sort((a, b) => (a.location === b.location ? 0 : a.location === 'makkah' ? -1 : 1));
+---
+
+<section class="ledger section section--dark" aria-labelledby="ledger-title" data-ledger>
+  <svg class="ledger__defs" aria-hidden="true" focusable="false" width="0" height="0">
+    <symbol id="tent-glyph" viewBox="0 0 32 24">
+      <path
+        fill-rule="evenodd"
+        d="M16 .6l.9 2c1.7 6 6.7 13.8 14.3 20.8H.8C8.4 16.4 13.4 8.6 15.1 2.6zM12.8 23.4 16 16.6l3.2 6.8z"
+      />
+    </symbol>
+  </svg>
+
+  <div class="container">
+    <div class="ledger__head">
+      <h2 id="ledger-title">{title}</h2>
+      <p class="ledger__summary">{summary}</p>
+    </div>
+
+    <ol class="ledger__chart" role="list" style={`--max: ${stats.maxPerSeason}`}>
+      {seasons.map((s, si) => (
+        <li class="season">
+          <div class="season__stack" aria-hidden="true">
+            {order(s.records).map((r, i) => (
+              <svg class:list={['tent', `tent--${r.location}`]} style={`--i: ${i}; --s: ${si}`} viewBox="0 0 32 24">
+                <use href="#tent-glyph" />
+              </svg>
+            ))}
+          </div>
+          <p class="season__year">
+            <span>{s.hijri}</span><small>{ui.hijriSuffix}</small>
+          </p>
+          <p class="season__meta">
+            <span>{s.gregorian}{ui.gregorianSuffix}</span>
+            <span class="season__count">{arabicCount(s.total, projectForms)}</span>
+            <span class="visually-hidden">
+              (مكة المكرمة: {s.makkah}، المشاعر المقدسة: {s.mashaer})
+            </span>
+          </p>
+        </li>
+      ))}
+    </ol>
+
+    <div class="ledger__foot">
+      <ul class="ledger__legend" role="list">
+        <li>
+          <svg class="tent tent--makkah" viewBox="0 0 32 24" aria-hidden="true"><use href="#tent-glyph" /></svg>
+          {homePage.ledger.legendMakkah}
+        </li>
+        <li>
+          <svg class="tent tent--mashaer" viewBox="0 0 32 24" aria-hidden="true"><use href="#tent-glyph" /></svg>
+          {homePage.ledger.legendMashaer}
+        </li>
+      </ul>
+      {showLink && (
+        <a class="text-link" href={localizedPath(routes.experience, locale)}>{homePage.ledger.cta}</a>
+      )}
+    </div>
+  </div>
+</section>
+
+<script>
+  const ledger = document.querySelector<HTMLElement>('[data-ledger]');
+  if (ledger) {
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) { ledger.classList.add('is-visible'); io.disconnect(); }
+        }
+      }, { threshold: 0.25 });
+      io.observe(ledger);
+    } else {
+      ledger.classList.add('is-visible');
+    }
+  }
+</script>
+
+<style>
+  .ledger { position: relative; overflow: hidden; }
+  .ledger__defs { position: absolute; }
+  .ledger__head {
+    display: grid; gap: var(--sp-4) var(--sp-7);
+    margin-block-end: clamp(2.25rem, 1.5rem + 3vw, 3.75rem);
+  }
+  @media (min-width: 900px) {
+    .ledger__head { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: end; }
+  }
+  .ledger__head h2 { font-size: var(--fs-h2); max-width: 16ch; }
+  .ledger__summary { color: var(--c-on-dark-muted); font-size: var(--fs-lead); line-height: 1.85; max-width: 52ch; }
+
+  .ledger__chart {
+    --unit: clamp(16px, 1.4vw + 8px, 28px);
+    --tent-w: calc(var(--unit) * 1.5);
+    display: grid;
+    align-items: end;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(0.5rem, 2vw, 2rem);
+    padding: 0;
+    border-block-end: 1px solid rgb(255 255 255 / 0.18);
+  }
+  .season { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .season__stack {
+    display: flex; flex-direction: column-reverse; align-items: center;
+    gap: calc(var(--unit) * 0.2);
+    padding-block-end: var(--sp-3);
+  }
+  .tent { width: var(--tent-w, 28px); height: auto; aspect-ratio: 32 / 24; }
+  .tent--makkah { fill: #e5484d; }
+  .tent--mashaer { fill: #f1f2f2; }
+
+  .season__year {
+    font-family: var(--f-display); font-weight: 700; color: #fff;
+    font-size: clamp(1.15rem, 0.7rem + 2.2vw, 2.4rem);
+    line-height: 1.2;
+    padding-block-start: var(--sp-3);
+    border-block-start: 2px solid var(--c-red);
+    width: 100%;
+  }
+  .season__year small { font-size: 0.5em; margin-inline-start: 0.1em; color: var(--c-on-dark-muted); font-weight: 500; }
+  .season__meta {
+    display: grid; gap: 0.1rem;
+    padding-block: var(--sp-2) var(--sp-5);
+    font-size: var(--fs-sm); color: var(--c-on-dark-muted); line-height: 1.5;
+  }
+  .season__count { color: #fff; font-weight: 600; }
+
+  .ledger__foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--sp-4) var(--sp-6);
+    padding-block-start: var(--sp-5);
+  }
+  .ledger__legend { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); padding: 0; font-size: var(--fs-sm); color: var(--c-on-dark-muted); }
+  .ledger__legend li { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .ledger__legend .tent { --tent-w: 22px; }
+
+  @media (max-width: 479px) {
+    .season__meta { font-size: 0.75rem; }
+  }
+
+  /* الحركة: تظهر الخيام تباعًا عند وصول القسم إلى مجال الرؤية */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .ledger .season__stack .tent {
+      opacity: 0;
+      transform: translateY(10px) scale(0.9);
+      transition: opacity 0.4s var(--ease-out), transform 0.5s var(--ease-out);
+      transition-delay: calc(var(--s) * 140ms + var(--i) * 55ms);
+    }
+    :global(html.js) .ledger.is-visible .season__stack .tent { opacity: 1; transform: none; }
+  }
+</style>

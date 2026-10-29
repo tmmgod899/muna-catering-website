@@ -1,0 +1,191 @@
+---
+/**
+ * صفحة معرض الصور مع التصفية حسب التصنيف وعارض الصور بالحجم الكامل.
+ * عناصر المعرض معرّفة في src/config/images.ts.
+ */
+import { getImage } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/ui/PageHero.astro';
+import Media from '../components/ui/Media.astro';
+import Icon from '../components/ui/Icon.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import { gallery, type GalleryCategory } from '../config/images';
+import type { Locale } from '../i18n/locales';
+import { t } from '../i18n/ui';
+import { getContent } from '../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const ui = t(locale);
+const { galleryPage: g } = getContent(locale);
+
+const usedCategories = [...new Set(gallery.map((i) => i.category))] as GalleryCategory[];
+const items = await Promise.all(
+  gallery.map(async (item) => ({
+    ...item,
+    full: item.src ? (await getImage({ src: item.src, width: Math.min(item.src.width, 1600), format: 'webp' })).src : null,
+  })),
+);
+---
+
+<BaseLayout locale={locale} page="gallery" title={g.meta.title} description={g.meta.description}>
+  <PageHero locale={locale} title={g.hero.title} lead={g.hero.lead} />
+
+  <section class="section" data-gallery>
+    <div class="container">
+      <div class="chips" role="group" aria-label={ui.gallery.filterLabel} data-chips hidden>
+        <button type="button" aria-pressed="true" data-filter="all">{ui.gallery.all}</button>
+        {usedCategories.map((c) => (
+          <button type="button" aria-pressed="false" data-filter={c}>{g.categories[c]}</button>
+        ))}
+      </div>
+
+      <ul class="grid" role="list">
+        {items.map((item) => (
+          <li class="grid__item" data-category={item.category}>
+            {item.src && item.full ? (
+              <button type="button" class="grid__open" data-full={item.full} data-alt={item.alt}>
+                <Media image={item} ratio="4 / 3" sizes="(min-width: 1100px) 380px, (min-width: 640px) 50vw, 100vw" />
+                <span class="grid__zoom" aria-hidden="true"><Icon name="maximize" size={18} /></span>
+                <span class="visually-hidden">{ui.gallery.open}: {item.alt}</span>
+              </button>
+            ) : (
+              <Media image={item} ratio="4 / 3" sizes="380px" />
+            )}
+            <p class="grid__caption">{item.src ? item.alt : g.categories[item.category]}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <dialog class="lightbox" aria-label={g.hero.title} data-lightbox>
+      <div class="lightbox__frame">
+        <img src="" alt="" data-lightbox-img />
+        <p class="lightbox__caption" data-lightbox-caption></p>
+      </div>
+      <p class="lightbox__counter" aria-live="polite" data-lightbox-counter data-template={ui.gallery.counter}></p>
+      <button type="button" class="lightbox__btn lightbox__close" data-lightbox-close>
+        <Icon name="x" size={24} /><span class="visually-hidden">{ui.gallery.close}</span>
+      </button>
+      <button type="button" class="lightbox__btn lightbox__prev" data-lightbox-prev>
+        <Icon name="chevronRight" size={28} /><span class="visually-hidden">{ui.gallery.prev}</span>
+      </button>
+      <button type="button" class="lightbox__btn lightbox__next" data-lightbox-next>
+        <Icon name="chevronLeft" size={28} /><span class="visually-hidden">{ui.gallery.next}</span>
+      </button>
+    </dialog>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-gallery]');
+  if (root) {
+    const chips = root.querySelector<HTMLElement>('[data-chips]')!;
+    const chipButtons = Array.from(chips.querySelectorAll<HTMLButtonElement>('button'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.grid__item'));
+    chips.hidden = false;
+
+    chipButtons.forEach((btn) => btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter;
+      chipButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      items.forEach((item) => { item.hidden = filter !== 'all' && item.dataset.category !== filter; });
+    }));
+
+    // عارض الصور
+    const dialog = root.querySelector<HTMLDialogElement>('[data-lightbox]')!;
+    const img = dialog.querySelector<HTMLImageElement>('[data-lightbox-img]')!;
+    const caption = dialog.querySelector<HTMLElement>('[data-lightbox-caption]')!;
+    const counter = dialog.querySelector<HTMLElement>('[data-lightbox-counter]')!;
+    const template = counter.dataset.template ?? '{current} / {total}';
+    let list: HTMLButtonElement[] = [];
+    let index = 0;
+    let opener: HTMLElement | null = null;
+
+    const show = (i: number) => {
+      index = (i + list.length) % list.length;
+      const btn = list[index];
+      img.src = btn.dataset.full ?? '';
+      img.alt = btn.dataset.alt ?? '';
+      caption.textContent = btn.dataset.alt ?? '';
+      counter.textContent = template.replace('{current}', String(index + 1)).replace('{total}', String(list.length));
+    };
+
+    root.querySelectorAll<HTMLButtonElement>('.grid__open').forEach((btn) => btn.addEventListener('click', () => {
+      list = Array.from(root.querySelectorAll<HTMLButtonElement>('.grid__item:not([hidden]) .grid__open'));
+      opener = btn;
+      show(list.indexOf(btn));
+      dialog.showModal();
+    }));
+
+    const isRtl = document.documentElement.dir === 'rtl';
+    dialog.querySelector('[data-lightbox-close]')!.addEventListener('click', () => dialog.close());
+    dialog.querySelector('[data-lightbox-next]')!.addEventListener('click', () => show(index + 1));
+    dialog.querySelector('[data-lightbox-prev]')!.addEventListener('click', () => show(index - 1));
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(index + (isRtl ? 1 : -1));
+      if (e.key === 'ArrowRight') show(index + (isRtl ? -1 : 1));
+    });
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => opener?.focus());
+  }
+</script>
+
+<style>
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block-end: var(--sp-6); }
+  .chips[hidden] { display: none; }
+  .chips button {
+    min-height: 42px; padding: 0.35rem 1.1rem;
+    border: 1px solid var(--c-line-strong); border-radius: 999px; background: #fff;
+    font-size: var(--fs-sm); font-weight: 500;
+  }
+  .chips button:hover { border-color: var(--c-char); }
+  .chips button[aria-pressed='true'] { background: var(--c-char); border-color: var(--c-char); color: #fff; }
+
+  .grid { display: grid; gap: var(--sp-5) var(--sp-4); padding: 0; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .grid__item[hidden] { display: none; }
+  .grid__open {
+    position: relative; display: block; width: 100%; padding: 0; border: 0; background: none;
+    border-radius: var(--r-md); overflow: hidden; cursor: zoom-in;
+  }
+  .grid__item :global(.media) { border-radius: var(--r-md); }
+  .grid__open :global(img) { transition: transform 0.6s var(--ease-out); }
+  .grid__open:hover :global(img) { transform: scale(1.04); }
+  .grid__zoom {
+    position: absolute; inset-block-start: var(--sp-3); inset-inline-end: var(--sp-3);
+    display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+    background: rgb(255 255 255 / 0.92); color: var(--c-char);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .grid__open:hover .grid__zoom, .grid__open:focus-visible .grid__zoom { opacity: 1; }
+  .grid__caption { margin-block-start: var(--sp-2); font-size: var(--fs-sm); color: var(--c-muted); }
+
+  .lightbox {
+    width: 100vw; height: 100dvh; max-width: none; max-height: none;
+    margin: 0; padding: clamp(3.5rem, 6vw, 5rem) clamp(1rem, 6vw, 6rem) clamp(4rem, 6vw, 5rem);
+    border: 0; background: rgb(28 30 31 / 0.96); color: #fff;
+    --focus: #fff;
+  }
+  .lightbox[open] { display: grid; place-items: center; }
+  .lightbox::backdrop { background: rgb(28 30 31 / 0.8); }
+  .lightbox__frame { display: grid; justify-items: center; gap: var(--sp-3); max-width: 100%; max-height: 100%; }
+  .lightbox__frame img { max-width: 100%; max-height: calc(100dvh - 11rem); width: auto; height: auto; object-fit: contain; border-radius: var(--r-sm); }
+  .lightbox__caption { color: var(--c-on-dark); font-size: var(--fs-sm); text-align: center; }
+  .lightbox__counter { position: absolute; inset-block-start: var(--sp-5); inset-inline-start: var(--sp-5); font-size: var(--fs-sm); color: var(--c-on-dark-muted); }
+  .lightbox__btn {
+    position: absolute; display: inline-grid; place-items: center;
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.3); background: rgb(255 255 255 / 0.08); color: #fff;
+  }
+  .lightbox__btn:hover { background: rgb(255 255 255 / 0.2); }
+  .lightbox__close { inset-block-start: var(--sp-4); inset-inline-end: var(--sp-4); }
+  .lightbox__prev, .lightbox__next { top: 50%; transform: translateY(-50%); }
+  .lightbox__prev { inset-inline-start: var(--sp-4); }
+  .lightbox__next { inset-inline-end: var(--sp-4); }
+  @media (max-width: 639px) {
+    .lightbox__prev, .lightbox__next { top: auto; bottom: var(--sp-4); transform: none; }
+  }
+</style>

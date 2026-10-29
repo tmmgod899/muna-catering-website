@@ -1,0 +1,110 @@
+---
+/**
+ * القالب الأساسي لجميع الصفحات: الوسوم الوصفية، والخطوط، والترويسة، والتذييل، والبيانات المنظمة.
+ */
+import '@fontsource-variable/noto-kufi-arabic/index.css';
+import '@fontsource/ibm-plex-sans-arabic/400.css';
+import '@fontsource/ibm-plex-sans-arabic/500.css';
+import '@fontsource/ibm-plex-sans-arabic/600.css';
+import '@fontsource/ibm-plex-sans-arabic/700.css';
+import '../styles/global.css';
+
+import bodyFont from '@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2?url';
+import displayFont from '@fontsource-variable/noto-kufi-arabic/files/noto-kufi-arabic-arabic-wght-normal.woff2?url';
+
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+import { locales, type Locale } from '../i18n/locales';
+import { t } from '../i18n/ui';
+import { company, contact } from '../config/site';
+import type { PageKey } from '../config/navigation';
+import { withBase, absoluteUrl } from '../lib/paths';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  page?: PageKey;
+  /** صورة المشاركة الافتراضية: /og-image.png */
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const { locale, title, description, page, ogImage = '/og-image.png', noindex = false } = Astro.props;
+const loc = locales[locale];
+const ui = t(locale);
+const site = Astro.site ?? new URL('https://www.example.com');
+// Astro.url.pathname يتضمن المسار الأساسي مسبقًا
+const canonical = new URL(Astro.url.pathname, site).href;
+const ogImageUrl = absoluteUrl(ogImage, site);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': absoluteUrl('/#organization', site),
+  name: company.brandName,
+  legalName: company.legalName,
+  url: absoluteUrl('/', site),
+  logo: absoluteUrl('/icon-512.png', site),
+  image: ogImageUrl,
+  foundingDate: String(company.foundedYear),
+  telephone: contact.phones[0]?.e164,
+  email: contact.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: `${contact.address.street}، ${contact.address.district}`,
+    addressLocality: contact.address.city,
+    addressCountry: 'SA',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: contact.geo.lat, longitude: contact.geo.lng },
+  areaServed: ['مكة المكرمة', 'المشاعر المقدسة'],
+};
+---
+
+<!doctype html>
+<html lang={loc.htmlLang} dir={loc.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#2e3132" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="icon" href={withBase('/favicon.ico')} sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href={withBase('/favicon-32.png')} />
+    <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
+    <link rel="manifest" href={withBase('/site.webmanifest')} />
+
+    <link rel="preload" href={displayFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={bodyFont} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={loc.ogLocale} />
+    <meta property="og:site_name" content={company.brandName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{ui.skipToContent}</a>
+    <Header locale={locale} current={page} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer locale={locale} />
+  </body>
+</html>
+
+<style>
+  main:focus { outline: none; }
+</style>

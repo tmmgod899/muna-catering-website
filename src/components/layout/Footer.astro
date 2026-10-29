@@ -1,0 +1,117 @@
+---
+/**
+ * تذييل الموقع: نبذة مختصرة، وروابط سريعة، والخدمات، وبيانات التواصل.
+ */
+import { Image } from 'astro:assets';
+import Icon from '../ui/Icon.astro';
+import { brandImages } from '../../config/images';
+import { company, contact, social, mapLinks } from '../../config/site';
+import { mainNavOrder, navLabel, routes } from '../../config/navigation';
+import { localizedPath, type Locale } from '../../i18n/locales';
+import { t } from '../../i18n/ui';
+import { getContent } from '../../content';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const ui = t(locale);
+const c = getContent(locale);
+const year = new Date().getFullYear();
+const socialLinks = Object.entries(social).filter(([, url]) => Boolean(url)) as [string, string][];
+---
+
+<footer class="footer section--dark">
+  <div class="container footer__grid">
+    <div class="footer__about">
+      <a href={localizedPath('/', locale)} class="footer__logo" aria-label={company.brandName}>
+        <Image src={brandImages.logo.src} alt={brandImages.logo.alt} width={84} densities={[1, 2]} />
+      </a>
+      <p>{c.common.footerAbout}</p>
+    </div>
+
+    <nav class="footer__col" aria-label={ui.footerNav}>
+      <h2>{ui.footer.pages}</h2>
+      <ul role="list">
+        {mainNavOrder.filter((k) => k !== 'home').map((key) => (
+          <li><a href={localizedPath(routes[key], locale)}>{navLabel(key, locale)}</a></li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="footer__col">
+      <h2>{ui.footer.services}</h2>
+      <ul role="list">
+        {c.serviceAreas.map((s) => (
+          <li><a href={localizedPath(`${routes.services}#${s.key}`, locale)}>{s.title}</a></li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="footer__col">
+      <h2>{ui.footer.contact}</h2>
+      <ul role="list" class="footer__contact">
+        {contact.phones.map((p) => (
+          <li>
+            <Icon name="phone" size={18} />
+            <a href={`tel:${p.e164}`}><span class="ltr">{p.display}</span></a>
+          </li>
+        ))}
+        <li>
+          <Icon name="mail" size={18} />
+          <a href={`mailto:${contact.email}`}><span class="ltr">{contact.email}</span></a>
+        </li>
+        <li>
+          <Icon name="mapPin" size={18} />
+          <a href={mapLinks.open} target="_blank" rel="noopener">
+            {contact.address.district}، {contact.address.street}، {contact.address.city}
+            <span class="visually-hidden">({ui.openMap})</span>
+          </a>
+        </li>
+      </ul>
+      {socialLinks.length > 0 && (
+        <ul role="list" class="footer__social">
+          {socialLinks.map(([name, url]) => (
+            <li><a href={url} target="_blank" rel="noopener">{name}</a></li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <div class="container footer__bottom-inner">
+      <p>© {year} {company.legalName}. {ui.allRightsReserved}.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { padding-block-start: clamp(3rem, 2rem + 4vw, 5rem); font-size: var(--fs-sm); }
+  .footer__grid {
+    display: grid; gap: var(--sp-7) var(--sp-6);
+    grid-template-columns: 1fr;
+    padding-block-end: var(--sp-7);
+  }
+  @media (min-width: 640px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .footer__grid { grid-template-columns: 1.35fr 0.8fr 1fr 1.15fr; } }
+
+  .footer__logo {
+    display: inline-grid; place-items: center;
+    background: #fff; border-radius: var(--r-lg);
+    padding: 14px 18px; margin-block-end: var(--sp-4);
+  }
+  .footer__logo img { width: 84px; height: auto; }
+  .footer__about p { color: var(--c-on-dark-muted); max-width: 40ch; line-height: 1.9; }
+
+  .footer__col h2 {
+    font-size: var(--fs-base); color: #fff; margin-block-end: var(--sp-4);
+  }
+  .footer__col ul { display: grid; gap: var(--sp-2); padding: 0; }
+  .footer__col a { color: var(--c-on-dark-muted); text-decoration: none; }
+  .footer__col a:hover { color: #fff; text-decoration: underline; }
+  .footer__contact li { display: flex; gap: var(--sp-3); align-items: flex-start; }
+  .footer__contact .icon { color: #e05a5f; margin-block-start: 0.3em; }
+  .footer__social { display: flex !important; flex-wrap: wrap; gap: var(--sp-3) !important; margin-block-start: var(--sp-4); }
+
+  .footer__bottom { border-block-start: 1px solid rgb(255 255 255 / 0.12); }
+  .footer__bottom-inner { padding-block: var(--sp-4); color: var(--c-on-dark-muted); font-size: var(--fs-xs); }
+</style>

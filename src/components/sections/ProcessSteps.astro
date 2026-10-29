@@ -1,0 +1,60 @@
+---
+/**
+ * مراحل العمل من المطبخ إلى نقطة التوزيع (تسلسل فعلي، لذا تُرقَّم).
+ */
+import { getContent } from '../../content';
+import type { Locale } from '../../i18n/locales';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  intro?: string;
+  class?: string;
+}
+const { locale, title, intro, class: className = '' } = Astro.props;
+const { process } = getContent(locale);
+---
+
+<section class:list={['section', className]} aria-labelledby="process-title">
+  <div class="container">
+    <div class="section-head">
+      <h2 id="process-title">{title}</h2>
+      {intro && <p>{intro}</p>}
+    </div>
+    <ol class="steps" role="list">
+      {process.map((step, i) => (
+        <li class="step">
+          <span class="step__num" aria-hidden="true">{i + 1}</span>
+          <h3>{step.title}</h3>
+          <p>{step.body}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .steps {
+    display: grid; gap: var(--sp-6);
+    padding: 0;
+    counter-reset: step;
+  }
+  @media (min-width: 720px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) {
+    .steps { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-5); }
+  }
+  .step { position: relative; padding-block-start: var(--sp-5); border-block-start: 1px solid var(--c-line-strong); }
+  .step__num {
+    position: absolute; top: -1px; inset-inline-start: 0;
+    transform: translateY(-50%);
+    display: inline-grid; place-items: center;
+    width: 2.25rem; height: 2.25rem;
+    border-radius: 50%;
+    background: var(--c-paper); border: 1.5px solid var(--c-red);
+    color: var(--c-red);
+    font-family: var(--f-display); font-weight: 700; font-size: 1rem; line-height: 1;
+  }
+  :global(.section--mist) .step__num { background: var(--c-mist); }
+  .step h3 { font-size: var(--fs-h4); margin-block: var(--sp-3) var(--sp-2); }
+  .step p { color: var(--c-muted); font-size: var(--fs-sm); line-height: 1.85; }
+</style>

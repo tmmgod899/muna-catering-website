@@ -1,0 +1,62 @@
+---
+/**
+ * بطاقات مجالات الخدمة الثلاثة مع صورها؛ تُستخدم في الصفحة الرئيسية.
+ */
+import Media from '../ui/Media.astro';
+import { images } from '../../config/images';
+import { routes } from '../../config/navigation';
+import { localizedPath, type Locale } from '../../i18n/locales';
+import { getContent } from '../../content';
+
+interface Props { locale: Locale; headingLevel?: 'h2' | 'h3' }
+const { locale } = Astro.props;
+const { serviceAreas } = getContent(locale);
+---
+
+<ul class="service-cards" role="list">
+  {serviceAreas.map((area) => (
+    <li class="service-card">
+      <a href={localizedPath(`${routes.services}#${area.key}`, locale)} class="service-card__link">
+        <Media
+          image={images.services[area.key]}
+          ratio="4 / 3"
+          sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+          class="service-card__media"
+        />
+        <div class="service-card__body">
+          <h3>{area.title}</h3>
+          <p>{area.summary}</p>
+        </div>
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .service-cards {
+    display: grid; gap: var(--sp-6);
+    padding: 0;
+  }
+  @media (min-width: 1024px) { .service-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .service-card__link {
+    display: flex; flex-direction: column; height: 100%;
+    text-decoration: none; color: inherit;
+    border-block-end: 2px solid var(--c-line);
+    transition: border-color 0.25s;
+  }
+  .service-card :global(.service-card__media) { border-radius: var(--r-md); }
+  .service-card :global(.service-card__media img) { transition: transform 0.6s var(--ease-out); }
+  .service-card__body { padding-block: var(--sp-5) var(--sp-5); }
+  .service-card h3 { font-size: var(--fs-h3); transition: color 0.2s; }
+  .service-card p { margin-block-start: var(--sp-2); color: var(--c-muted); line-height: 1.85; }
+
+  .service-card__link:hover { border-color: var(--c-red); }
+  .service-card__link:hover h3 { color: var(--c-red); }
+  .service-card__link:hover :global(.service-card__media img) { transform: scale(1.035); }
+  /* الأجهزة اللوحية: بطاقة أفقية (صورة بجانب النص) لتجنب بطاقة منفردة في صف ثانٍ */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .service-card__link { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: var(--sp-5); align-items: center; }
+    .service-card__body { padding-block: var(--sp-4); }
+  }
+</style>
