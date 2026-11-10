@@ -36,7 +36,8 @@ const { aboutPage: a } = getContent(locale);
       </div>
       <div class="story__media">
         <Media image={images.about.facility} ratio="4 / 3" sizes="(min-width: 1024px) 520px, 100vw" class="story__photo" />
-        <Media image={images.about.team} ratio="4 / 3" sizes="(min-width: 1024px) 300px, 60vw" class="story__photo story__photo--inset" />
+        <!-- تُعرض صورة الرئيس التنفيذي بنسبتها الأصلية (16:9) دون قص حتى لا يُقتطع أحد الظاهرين فيها -->
+        <Media image={images.about.ceo} ratio="16 / 9" sizes="(min-width: 1024px) 320px, 60vw" class="story__photo story__photo--inset" />
       </div>
     </div>
   </section>
@@ -137,6 +138,10 @@ const { aboutPage: a } = getContent(locale);
   .story__media :global(.story__photo--inset) {
     position: absolute; inset-block-end: 0; inset-inline-end: 0; width: 55%;
     border: 6px solid #fff; box-shadow: 0 18px 40px -22px rgb(46 49 50 / 0.6);
+  }
+  /* الجوال: صورة الرئيس التنفيذي عرضية (16:9)، فتُوسَّع قليلًا لتبقى مساحتها مماثلة للصورة السابقة وواضحة */
+  @media (max-width: 639px) {
+    .story__media :global(.story__photo--inset) { width: 64%; border-width: 4px; }
   }
 
   .commitment__inner { display: grid; gap: var(--sp-5) var(--sp-8); align-items: center; }

@@ -57,7 +57,8 @@ export const images = {
   },
   about: {
     main: { src: kitchenCookingArea, alt: 'منطقة الطهي في مطبخ الشركة' },
-    team: { src: teamGroup, alt: 'فريق العمل في موقع الخدمة' },
+    // الصورة الثانية في صفحة «من نحن»: الرئيس التنفيذي داخل مطبخ الشركة (حلّت محل صورة فريق العمل التي بقيت في المعرض)
+    ceo: { src: ceoMissionVisit, alt: 'الرئيس التنفيذي للشركة مع وفد من البعثة في مطبخ الشركة' },
     facility: { src: facilityExterior, alt: 'واجهة مبنى مطابخ منى' },
   },
   services: {
