@@ -116,6 +116,12 @@ const quoteHref = localizedPath(`${routes.contact}#quote`, locale);
           <span class="ltr">{phone.display}</span>
         </a>
       )}
+      {contact.whatsapp && (
+        <a class="mobile-menu__contact" href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener">
+          <Icon name="messageCircle" size={18} />
+          <span>{ui.whatsapp}</span>
+        </a>
+      )}
       <a class="mobile-menu__contact" href={`mailto:${contact.email}`}>
         <Icon name="mail" size={18} />
         <span class="ltr">{contact.email}</span>
@@ -198,6 +204,7 @@ const quoteHref = localizedPath(`${routes.contact}#quote`, locale);
     .topbar__place { display: none; }
     .topbar__inner { justify-content: center; }
     .topbar__links li:last-child { display: none; }
+    .topbar__links a { min-height: 44px; padding-inline: var(--sp-2); }
   }
 
   .site-header {
@@ -266,6 +273,7 @@ const quoteHref = localizedPath(`${routes.contact}#quote`, locale);
     background: #fff;
     padding: var(--sp-4) var(--sp-5) var(--sp-6);
     overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateX(100%);
     transition: transform 0.3s var(--ease-out);
   }
@@ -283,7 +291,7 @@ const quoteHref = localizedPath(`${routes.contact}#quote`, locale);
   }
   .mobile-menu__list a[aria-current='page'] { color: var(--c-red); }
   .mobile-menu__foot { margin-block-start: auto; padding-block-start: var(--sp-6); display: grid; gap: var(--sp-3); }
-  .mobile-menu__contact { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--c-text); text-decoration: none; }
+  .mobile-menu__contact { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 44px; color: var(--c-text); text-decoration: none; }
   .mobile-menu__contact .icon { color: var(--c-red); }
   :global(html.menu-locked) { overflow: hidden; }
 </style>

@@ -7,6 +7,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/ui/PageHero.astro';
 import SeasonLedger from '../components/sections/SeasonLedger.astro';
 import CtaBand from '../components/sections/CtaBand.astro';
+import CertificateGrid from '../components/sections/CertificateGrid.astro';
+import PartnersGrid from '../components/sections/PartnersGrid.astro';
+import { appreciationCertificates } from '../config/certificates';
 import Icon from '../components/ui/Icon.astro';
 import { displayOptions } from '../config/site';
 import { summarizeBySeason, formatNumber, arabicCount, type ClientType } from '../lib/experience';
@@ -130,8 +133,17 @@ const projectForms = { one: 'مشروع واحد', two: 'مشروعان', few: '
           </li>
         ))}
       </ul>
+      <div class="cert-wall">
+        <div class="cert-wall__head">
+          <h3>{p.appreciation.galleryTitle}</h3>
+          <p>{p.appreciation.galleryIntro}</p>
+        </div>
+        <CertificateGrid items={appreciationCertificates} id="appreciation-docs" label={p.appreciation.title} locale={locale} />
+      </div>
     </div>
   </section>
+
+  <PartnersGrid title={p.partners.title} intro={p.partners.intro} headingId="experience-partners-title" />
 
   <CtaBand locale={locale} />
 </BaseLayout>
@@ -241,7 +253,16 @@ const projectForms = { one: 'مشروع واحد', two: 'مشروعان', few: '
     .records .num { text-align: start; }
     .records__season th { padding-inline: 0; }
     .filters__count { margin-inline-start: 0; }
+    .filters__group { width: 100%; }
+    .segmented { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); width: 100%; }
+    .segmented button { padding-inline: 0.6rem; line-height: 1.4; }
+    select { width: 100%; min-width: 0; }
   }
+
+  .cert-wall { margin-block-start: var(--sp-7); }
+  .cert-wall__head { margin-block-end: var(--sp-5); }
+  .cert-wall__head h3 { font-size: var(--fs-h3); }
+  .cert-wall__head p { margin-block-start: var(--sp-1); color: var(--c-muted); font-size: var(--fs-sm); }
 
   .appreciation__list { display: grid; gap: var(--sp-4); padding: 0; }
   @media (min-width: 720px) { .appreciation__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

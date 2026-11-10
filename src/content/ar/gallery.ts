@@ -18,5 +18,7 @@ export const galleryPage = {
     team: 'فريق العمل',
     facility: 'المنشأة والنقل',
     meals: 'الوجبات',
+    meetings: 'لقاءات وزيارات',
   } satisfies Record<GalleryCategory, string>,
+  videoLabel: 'تشغيل المقطع',
 };

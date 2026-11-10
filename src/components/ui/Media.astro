@@ -22,6 +22,8 @@ interface Props {
   class?: string;
   /** موضع القص داخل الإطار */
   position?: string;
+  /** 'contain' لعرض الصورة كاملة دون قص (مثل الوثائق والشهادات) */
+  fit?: 'cover' | 'contain';
   locale?: Locale;
 }
 
@@ -34,6 +36,7 @@ const {
   fetchpriority,
   class: className = '',
   position = 'center',
+  fit = 'cover',
   locale = defaultLocale,
 } = Astro.props;
 
@@ -42,7 +45,7 @@ const src = image.src;
 const usableWidths = src ? [...new Set([...widths.filter((w) => w < src.width), src.width])] : [];
 ---
 
-<div class:list={['media', className]} style={`--ratio: ${ratio}; --pos: ${position};`}>
+<div class:list={['media', className]} style={`--ratio: ${ratio}; --pos: ${position};${fit === 'contain' ? ' --fit: contain;' : ''}`}>
   {
     src ? (
       <Picture
@@ -76,7 +79,7 @@ const usableWidths = src ? [...new Set([...widths.filter((w) => w < src.width), 
     background: var(--c-mist);
   }
   .media :global(picture), .media :global(img) { width: 100%; height: 100%; }
-  .media :global(img) { object-fit: cover; object-position: var(--pos); }
+  .media :global(img) { object-fit: var(--fit, cover); object-position: var(--pos); }
 
   .media__placeholder {
     position: absolute; inset: 0;

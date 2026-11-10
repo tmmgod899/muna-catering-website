@@ -35,6 +35,15 @@ const { contactPage: c } = getContent(locale);
               </div>
             </li>
           ))}
+          {contact.whatsapp && (
+            <li>
+              <span class="contact__icon"><Icon name="messageCircle" size={20} /></span>
+              <div>
+                <span class="contact__label">{c.details.whatsapp}</span>
+                <a href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener"><span class="ltr">{contact.whatsappDisplay}</span></a>
+              </div>
+            </li>
+          )}
           <li>
             <span class="contact__icon"><Icon name="mail" size={20} /></span>
             <div>
@@ -108,6 +117,9 @@ const { contactPage: c } = getContent(locale);
   .contact__details address { font-style: normal; line-height: 1.85; }
   .contact__map-link { margin-block-start: var(--sp-2); font-size: var(--fs-sm); color: #fff; text-decoration-color: rgb(255 255 255 / 0.4); }
 
+  @media (max-width: 767px) {
+    .contact__map-link { padding-block: 0.4rem; }
+  }
   .contact__form { scroll-margin-top: calc(var(--header-h) + 24px); }
   .contact__form h2 { font-size: var(--fs-h2); }
   .contact__form-intro { color: var(--c-muted); margin-block: var(--sp-2) var(--sp-5); }

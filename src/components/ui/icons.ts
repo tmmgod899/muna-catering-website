@@ -32,6 +32,13 @@ import fileText from 'lucide-static/icons/file-text.svg?raw';
 import info from 'lucide-static/icons/info.svg?raw';
 import externalLink from 'lucide-static/icons/external-link.svg?raw';
 import maximize from 'lucide-static/icons/maximize-2.svg?raw';
+import messageCircle from 'lucide-static/icons/message-circle.svg?raw';
+import calendar from 'lucide-static/icons/calendar.svg?raw';
+import circleCheck from 'lucide-static/icons/circle-check.svg?raw';
+import triangleAlert from 'lucide-static/icons/triangle-alert.svg?raw';
+import play from 'lucide-static/icons/play.svg?raw';
+import zoomIn from 'lucide-static/icons/zoom-in.svg?raw';
+import handshake from 'lucide-static/icons/handshake.svg?raw';
 
 export const icons = {
   phone,
@@ -64,6 +71,13 @@ export const icons = {
   info,
   externalLink,
   maximize,
+  messageCircle,
+  calendar,
+  circleCheck,
+  triangleAlert,
+  play,
+  zoomIn,
+  handshake,
 };
 
 export type IconName = keyof typeof icons;

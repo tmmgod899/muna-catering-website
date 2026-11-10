@@ -36,8 +36,10 @@ export const contact = {
   ] satisfies PhoneEntry[],
   /** البريد الوارد في صفحة «موقع المنشأة». يُستحسن استبداله ببريد على نطاق الشركة بعد حجزه. */
   email: 'menaaa002@gmail.com',
-  /** رقم واتساب بالصيغة الدولية دون علامة + (مثال: 966500000000). غير مؤكد في المصدر. */
-  whatsapp: null as string | null,
+  /** رقم واتساب بالصيغة الدولية دون علامة + ولا مسافات؛ اعتمدته الشركة رقمًا رسميًا لاستقبال طلبات عروض الأسعار. */
+  whatsapp: '966567750002' as string | null,
+  /** الصيغة المعروضة لرقم واتساب */
+  whatsappDisplay: '+966 56 775 0002',
   address: {
     street: 'شارع صلاح الدين الأيوبي (شارع العسكر)',
     district: 'حي الشرائع، الخضراء',
@@ -68,14 +70,34 @@ export const mapLinks = {
 };
 
 /**
- * إعدادات نموذج التواصل.
- * - 'demo': وضع تجريبي؛ يتحقق من الحقول ولا يُرسل أي بيانات، ويعرض للزائر وسائل التواصل المباشرة.
- * - 'endpoint': يُرسل البيانات بصيغة JSON إلى العنوان المحدد في endpoint (مثل خدمة نماذج خارجية).
- *   يجب اختبار هذا الوضع قبل النشر.
+ * إعدادات نظام طلب عرض السعر.
+ *
+ * الإرسال بالبريد الإلكتروني يتم عبر خدمة Web3Forms، التي تستقبل الطلب وتحوّله إلى بريد الشركة.
+ * مفتاح الوصول (Access Key) معرّف عام مصمَّم للاستخدام في المتصفح وليس كلمة مرور أو مفتاحًا سريًّا:
+ * لا يتيح الدخول إلى الحساب، ويقتصر عمله على توجيه الطلبات إلى البريد المسجَّل عليه.
+ * يُمرَّر المفتاح وقت البناء عبر متغير البيئة PUBLIC_WEB3FORMS_ACCESS_KEY (متغير المستودع WEB3FORMS_ACCESS_KEY
+ * في GitHub Actions)، ولا يُكتب في الشيفرة. عند غيابه يُخفى خيار البريد تلقائيًا ويبقى خيار واتساب متاحًا.
  */
-export const contactForm = {
-  mode: 'demo' as 'demo' | 'endpoint',
-  endpoint: '',
+const accessKey = (import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY ?? '').trim();
+const isValidAccessKey = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accessKey);
+
+if (accessKey && !isValidAccessKey) {
+  console.warn('[quote] قيمة PUBLIC_WEB3FORMS_ACCESS_KEY ليست بصيغة صحيحة؛ تم تعطيل الإرسال بالبريد الإلكتروني.');
+} else if (!accessKey) {
+  console.warn('[quote] لم يُضبط PUBLIC_WEB3FORMS_ACCESS_KEY؛ يُعرض خيار الإرسال عبر واتساب فقط.');
+}
+
+export const quoteRequest = {
+  /** مفتاح Web3Forms، أو سلسلة فارغة عند عدم الضبط */
+  accessKey: isValidAccessKey ? accessKey : '',
+  emailEnabled: isValidAccessKey,
+  endpoint: 'https://api.web3forms.com/submit',
+  /** عنوان رسالة البريد المرسلة إلى الشركة */
+  emailSubject: 'New Quotation Request – Muna Company',
+  /** اسم المرسل الظاهر في رسالة البريد */
+  emailFromName: 'Muna Company Website',
+  /** مدة منع تكرار إرسال الطلب نفسه بالبريد (بالدقائق) */
+  duplicateWindowMinutes: 30,
 };
 
 /** خيارات العرض */

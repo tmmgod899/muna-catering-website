@@ -224,6 +224,13 @@ ul[role='list'], ol[role='list'] { list-style: none; padding: 0; }
 .check-list li { display: flex; gap: var(--sp-3); align-items: flex-start; }
 .check-list .icon { color: var(--c-red); margin-block-start: 0.35em; }
 
+/* ——— تحسينات الجوال: أهداف لمس لا تقل عن 44 بكسل (لا تؤثر في الشاشات الكبيرة) ——— */
+@media (max-width: 767px) {
+  .text-link { min-height: 44px; }
+  .btn--sm { min-height: 44px; }
+  .section-head--row { gap: var(--sp-2) var(--sp-6); }
+}
+
 /* ——— الحركة: تُفعَّل فقط عند توفر JavaScript وعدم تفضيل تقليل الحركة ——— */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

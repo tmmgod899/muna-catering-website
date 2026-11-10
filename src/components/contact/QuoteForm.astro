@@ -1,12 +1,15 @@
 ---
 /**
  * نموذج طلب عرض السعر.
- * يعتمد سلوك الإرسال على contactForm.mode في src/config/site.ts:
- * - 'demo': تحقق من الحقول فقط دون أي إرسال، مع عرض بدائل تواصل مباشرة.
- * - 'endpoint': إرسال JSON إلى contactForm.endpoint.
+ *
+ * يملأ العميل النموذج مرة واحدة ثم يختار طريقة الإرسال:
+ * - البريد الإلكتروني: يُرسَل الطلب إلى بريد الشركة عبر خدمة Web3Forms (انظر quoteRequest في src/config/site.ts).
+ *   لا تُعرض رسالة نجاح إلا بعد تأكيد الخدمة استلام الطلب (success: true).
+ * - واتساب: تُفتح محادثة مع رقم الشركة وفيها رسالة منسقة بتفاصيل الطلب، ويضغط العميل «إرسال» بنفسه.
+ * عند عدم ضبط مفتاح Web3Forms يُخفى خيار البريد تلقائيًا ويبقى خيار واتساب.
  */
 import Icon from '../ui/Icon.astro';
-import { contact, contactForm } from '../../config/site';
+import { contact, quoteRequest } from '../../config/site';
 import type { Locale } from '../../i18n/locales';
 import { getContent } from '../../content';
 
@@ -15,27 +18,38 @@ const { locale } = Astro.props;
 const { contactPage } = getContent(locale);
 const f = contactPage.form;
 const phone = contact.phones[0];
-const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
+const emailEnabled = quoteRequest.emailEnabled;
+const whatsappEnabled = Boolean(contact.whatsapp);
+
+// تسميات الحقول بالترتيب المستخدم في رسالة البريد ورسالة واتساب
+const labels = {
+  name: f.fields.name.label,
+  company: f.fields.company.label,
+  phone: f.fields.phone.label,
+  email: f.fields.email.label,
+  service: f.fields.service.label,
+  date: f.fields.date.label,
+  quantity: f.fields.quantity.label,
+  location: f.fields.location.label,
+  details: f.fields.details.label,
+};
 ---
 
 <form
   class="quote-form"
   novalidate
   data-quote-form
-  data-mode={isDemo ? 'demo' : 'endpoint'}
-  data-endpoint={isDemo ? undefined : contactForm.endpoint}
-  data-email={contact.email}
-  data-subject={f.demo.emailSubject}
+  data-access-key={emailEnabled ? quoteRequest.accessKey : undefined}
+  data-endpoint={emailEnabled ? quoteRequest.endpoint : undefined}
+  data-subject={quoteRequest.emailSubject}
+  data-from-name={quoteRequest.emailFromName}
+  data-whatsapp={contact.whatsapp ?? undefined}
+  data-dup-minutes={quoteRequest.duplicateWindowMinutes}
   data-messages={JSON.stringify(f.errors)}
+  data-labels={JSON.stringify(labels)}
+  data-text={JSON.stringify(f.message)}
   aria-describedby="form-required-note"
 >
-  {isDemo && (
-    <p class="quote-form__demo" role="note">
-      <strong>{f.demo.badge}</strong>
-      <span>{f.demo.notice}</span>
-    </p>
-  )}
-
   <p id="form-required-note" class="quote-form__note">{f.requiredNote}</p>
 
   <div class="quote-form__error-summary" role="alert" data-error-summary hidden>
@@ -45,31 +59,32 @@ const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
 
   <div class="quote-form__grid">
     <div class="field">
-      <label for="qf-name">{f.fields.name.label} <span aria-hidden="true">*</span></label>
+      <label for="qf-name">{labels.name} <span aria-hidden="true">*</span></label>
       <input id="qf-name" name="name" type="text" autocomplete={f.fields.name.autocomplete} required maxlength="120" aria-describedby="qf-name-error" />
       <p class="field__error" id="qf-name-error" data-error-for="name"></p>
     </div>
 
     <div class="field">
-      <label for="qf-org">{f.fields.organization.label}</label>
-      <input id="qf-org" name="organization" type="text" autocomplete={f.fields.organization.autocomplete} maxlength="160" />
+      <label for="qf-company">{labels.company}</label>
+      <input id="qf-company" name="company" type="text" autocomplete={f.fields.company.autocomplete} maxlength="160" aria-describedby="qf-company-hint" />
+      <p class="field__hint" id="qf-company-hint">{f.fields.company.hint}</p>
     </div>
 
     <div class="field">
-      <label for="qf-phone">{f.fields.phone.label} <span aria-hidden="true">*</span></label>
+      <label for="qf-phone">{labels.phone} <span aria-hidden="true">*</span></label>
       <input id="qf-phone" name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete={f.fields.phone.autocomplete} required maxlength="20" aria-describedby="qf-phone-hint qf-phone-error" />
       <p class="field__hint" id="qf-phone-hint">{f.fields.phone.hint}</p>
       <p class="field__error" id="qf-phone-error" data-error-for="phone"></p>
     </div>
 
     <div class="field">
-      <label for="qf-email">{f.fields.email.label} <span aria-hidden="true">*</span></label>
-      <input id="qf-email" name="email" type="email" dir="ltr" autocomplete={f.fields.email.autocomplete} required maxlength="160" aria-describedby="qf-email-error" />
+      <label for="qf-email">{labels.email} <span aria-hidden="true">*</span></label>
+      <input id="qf-email" name="email" type="email" inputmode="email" dir="ltr" autocomplete={f.fields.email.autocomplete} required maxlength="160" aria-describedby="qf-email-error" />
       <p class="field__error" id="qf-email-error" data-error-for="email"></p>
     </div>
 
     <div class="field">
-      <label for="qf-service">{f.fields.service.label} <span aria-hidden="true">*</span></label>
+      <label for="qf-service">{labels.service} <span aria-hidden="true">*</span></label>
       <select id="qf-service" name="service" required aria-describedby="qf-service-error">
         <option value="">{f.fields.service.placeholder}</option>
         {f.serviceOptions.map((o) => <option value={o}>{o}</option>)}
@@ -78,86 +93,173 @@ const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
     </div>
 
     <div class="field">
-      <label for="qf-count">{f.fields.beneficiaries.label}</label>
-      <input id="qf-count" name="beneficiaries" type="text" inputmode="numeric" dir="ltr" maxlength="7" aria-describedby="qf-count-hint qf-count-error" />
-      <p class="field__hint" id="qf-count-hint">{f.fields.beneficiaries.hint}</p>
-      <p class="field__error" id="qf-count-error" data-error-for="beneficiaries"></p>
+      <label for="qf-date">{labels.date} <span aria-hidden="true">*</span></label>
+      <input id="qf-date" name="date" type="date" dir="ltr" required aria-describedby="qf-date-hint qf-date-error" />
+      <p class="field__hint" id="qf-date-hint">{f.fields.date.hint}</p>
+      <p class="field__error" id="qf-date-error" data-error-for="date"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-quantity">{labels.quantity}</label>
+      <input id="qf-quantity" name="quantity" type="text" inputmode="numeric" dir="ltr" maxlength="7" aria-describedby="qf-quantity-hint qf-quantity-error" />
+      <p class="field__hint" id="qf-quantity-hint">{f.fields.quantity.hint}</p>
+      <p class="field__error" id="qf-quantity-error" data-error-for="quantity"></p>
+    </div>
+
+    <div class="field">
+      <label for="qf-location">{labels.location} <span aria-hidden="true">*</span></label>
+      <input id="qf-location" name="location" type="text" required maxlength="160" aria-describedby="qf-location-hint qf-location-error" />
+      <p class="field__hint" id="qf-location-hint">{f.fields.location.hint}</p>
+      <p class="field__error" id="qf-location-error" data-error-for="location"></p>
     </div>
 
     <div class="field field--full">
-      <label for="qf-message">{f.fields.message.label}</label>
-      <textarea id="qf-message" name="message" rows="5" maxlength="2000" aria-describedby="qf-message-hint"></textarea>
-      <p class="field__hint" id="qf-message-hint">{f.fields.message.hint}</p>
+      <label for="qf-details">{labels.details}</label>
+      <textarea id="qf-details" name="details" rows="5" maxlength="2000" aria-describedby="qf-details-hint"></textarea>
+      <p class="field__hint" id="qf-details-hint">{f.fields.details.hint}</p>
     </div>
   </div>
 
-  <button class="btn quote-form__submit" type="submit" data-submit data-label-sending={f.sending}>
-    <Icon name="send" size={18} />
-    <span data-submit-label>{f.submit}</span>
-  </button>
+  <!-- حقل مخفي لاعتراض الرسائل الآلية؛ لا يراه الزائر -->
+  <div class="quote-form__hp" aria-hidden="true">
+    <label>Leave this empty<input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" /></label>
+  </div>
 
-  <div class="quote-form__result" data-result tabindex="-1" hidden>
-    <div data-result-demo hidden>
-      <h3>{f.demo.resultTitle}</h3>
-      <p>{f.demo.resultBody}</p>
-      <div class="quote-form__result-actions">
-        <a class="btn btn--sm" href={`mailto:${contact.email}`} data-mailto>
-          <Icon name="mail" size={18} />{f.demo.emailAction}
-        </a>
-        {phone && (
-          <a class="btn btn--sm btn--outline" href={`tel:${phone.e164}`}>
-            <Icon name="phone" size={18} />{f.demo.callAction}
-          </a>
-        )}
+  <div class="quote-form__send">
+    {emailEnabled && whatsappEnabled && <p class="quote-form__prompt">{f.channels.prompt}</p>}
+    <div class="quote-form__actions">
+      {emailEnabled && (
+        <button class="btn" type="submit" value="email" data-channel="email">
+          <Icon name="mail" size={18} />
+          <span data-label>{f.channels.email}</span>
+        </button>
+      )}
+      {whatsappEnabled && (
+        <button class:list={['btn', emailEnabled && 'btn--outline']} type="submit" value="whatsapp" data-channel="whatsapp">
+          <Icon name="messageCircle" size={18} />
+          <span data-label>{emailEnabled ? f.channels.whatsapp : f.channels.whatsappOnly}</span>
+        </button>
+      )}
+    </div>
+    {emailEnabled && <p class="quote-form__privacy">{f.channels.privacy}</p>}
+  </div>
+
+  <div class="quote-form__result" data-result tabindex="-1" role="status" aria-live="polite" hidden>
+    <div class="result result--success" data-result-kind="success" hidden>
+      <Icon name="circleCheck" size={26} />
+      <div>
+        <h3>{f.results.emailSuccessTitle}</h3>
+        <p>{f.results.emailSuccessBody}</p>
       </div>
     </div>
-    <div data-result-success hidden>
-      <h3>{f.success.title}</h3>
-      <p>{f.success.body}</p>
+    <div class="result result--success" data-result-kind="duplicate" hidden>
+      <Icon name="circleCheck" size={26} />
+      <div>
+        <h3>{f.results.duplicateTitle}</h3>
+        <p>{f.results.duplicateBody}</p>
+      </div>
     </div>
-    <div data-result-error hidden>
-      <p>{f.errors.network}</p>
+    <div class="result result--error" data-result-kind="error" hidden>
+      <Icon name="triangleAlert" size={26} />
+      <div>
+        <h3>{f.results.errorTitle}</h3>
+        <p data-error-text data-default={f.results.errorBody} data-rate-limit={f.results.rateLimitBody}>{f.results.errorBody}</p>
+        <div class="result__actions">
+          {whatsappEnabled && (
+            <button type="button" class="btn btn--sm" data-retry-whatsapp>
+              <Icon name="messageCircle" size={18} />{f.channels.whatsapp}
+            </button>
+          )}
+          {phone && (
+            <a class="btn btn--sm btn--outline" href={`tel:${phone.e164}`}>
+              <Icon name="phone" size={18} /><span class="ltr">{phone.display}</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+    <div class="result result--info" data-result-kind="whatsapp" hidden>
+      <Icon name="messageCircle" size={26} />
+      <div>
+        <h3>{f.results.whatsappTitle}</h3>
+        <p>{f.results.whatsappBody}</p>
+        <a class="text-link" href="#" target="_blank" rel="noopener" data-whatsapp-fallback>{f.results.whatsappFallback}</a>
+      </div>
     </div>
   </div>
 
+  <noscript>
+    <p class="quote-form__noscript">
+      يتطلب إرسال النموذج تفعيل JavaScript في المتصفح. يمكنكم التواصل معنا مباشرة عبر الجوال
+      {phone && <a href={`tel:${phone.e164}`}><span class="ltr">{phone.display}</span></a>}
+      أو البريد الإلكتروني <a href={`mailto:${contact.email}`}><span class="ltr">{contact.email}</span></a>.
+    </p>
+  </noscript>
 </form>
 
 <script>
-  type Messages = Record<'required' | 'email' | 'phone' | 'number' | 'summary' | 'network', string>;
+  type FieldName = 'name' | 'company' | 'phone' | 'email' | 'service' | 'date' | 'quantity' | 'location' | 'details';
+  type Messages = Record<'required' | 'email' | 'phone' | 'number' | 'date' | 'summary', string>;
+  type Text = Record<'heading' | 'headingEn' | 'empty' | 'sentFrom' | 'sentAt', string>;
+  type ResultKind = 'success' | 'duplicate' | 'error' | 'whatsapp';
+
+  const FIELDS: FieldName[] = ['name', 'company', 'phone', 'email', 'service', 'date', 'quantity', 'location', 'details'];
+  const DUP_KEY = 'muna-quote-last-sent';
 
   const form = document.querySelector<HTMLFormElement>('[data-quote-form]');
   if (form) {
-    const messages: Messages = JSON.parse(form.dataset.messages ?? '{}');
+    const cfg = form.dataset;
+    const messages: Messages = JSON.parse(cfg.messages ?? '{}');
+    const labels: Record<FieldName, string> = JSON.parse(cfg.labels ?? '{}');
+    const text: Text = JSON.parse(cfg.text ?? '{}');
     const summary = form.querySelector<HTMLElement>('[data-error-summary]')!;
     const result = form.querySelector<HTMLElement>('[data-result]')!;
-    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
-    const submitLabel = form.querySelector<HTMLElement>('[data-submit-label]')!;
-    const mode = form.dataset.mode;
+    const channelButtons = Array.from(form.querySelectorAll<HTMLButtonElement>('[data-channel]'));
+    const dateInput = form.querySelector<HTMLInputElement>('#qf-date')!;
+    const honeypot = form.querySelector<HTMLInputElement>('input[name="botcheck"]')!;
+    let sending = false;
 
-    // تحويل الأرقام العربية الهندية إلى أرقام غربية قبل التحقق
+    // تاريخ اليوم بالتوقيت المحلي (yyyy-mm-dd) حدًّا أدنى لحقل التاريخ
+    const todayIso = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    dateInput.min = todayIso();
+
+    // تحويل الأرقام العربية الهندية والفارسية إلى أرقام غربية
     const normalizeDigits = (value: string) =>
       value.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 
-    const validators: Record<string, (v: string) => string | null> = {
+    const value = (name: FieldName) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
+
+    const validators: Partial<Record<FieldName, (v: string) => string | null>> = {
       name: (v) => (v.trim().length < 2 ? messages.required : null),
       phone: (v) => {
-        const digits = normalizeDigits(v).replace(/[\s-]/g, '');
+        const digits = normalizeDigits(v).replace(/[\s\-().]/g, '');
         if (!digits) return messages.required;
-        return /^(?:\+9665|009665|9665|05)\d{8}$/.test(digits) ? null : messages.phone;
+        const saudi = /^(?:\+9665|009665|9665|05)\d{8}$/.test(digits);
+        const international = /^(?:\+|00)[1-9]\d{7,14}$/.test(digits);
+        return saudi || international ? null : messages.phone;
       },
       email: (v) => {
         if (!v.trim()) return messages.required;
         return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? null : messages.email;
       },
       service: (v) => (v ? null : messages.required),
-      beneficiaries: (v) => {
-        const n = normalizeDigits(v).trim();
+      date: (v) => {
+        if (!v) return messages.required;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(new Date(`${v}T00:00:00`).getTime())) return messages.date;
+        return v < todayIso() ? messages.date : null;
+      },
+      quantity: (v) => {
+        const n = normalizeDigits(v).trim().replace(/[,،\s]/g, '');
         if (!n) return null;
         return /^[1-9]\d*$/.test(n) ? null : messages.number;
       },
+      location: (v) => (v.trim().length < 2 ? messages.required : null),
     };
 
-    const setError = (name: string, message: string | null) => {
+    const setError = (name: FieldName, message: string | null) => {
       const field = form.elements.namedItem(name) as HTMLInputElement | null;
       const slot = form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
       if (!field || !slot) return;
@@ -165,91 +267,169 @@ const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
       field.setAttribute('aria-invalid', message ? 'true' : 'false');
     };
 
-    const validateField = (name: string) => {
-      const field = form.elements.namedItem(name) as HTMLInputElement | null;
-      if (!field) return true;
-      const error = validators[name](field.value);
+    const validateField = (name: FieldName) => {
+      const validator = validators[name];
+      if (!validator) return true;
+      const error = validator(value(name));
       setError(name, error);
       return !error;
     };
 
-    Object.keys(validators).forEach((name) => {
+    (Object.keys(validators) as FieldName[]).forEach((name) => {
       const field = form.elements.namedItem(name) as HTMLInputElement | null;
       field?.addEventListener('blur', () => { if (field.value) validateField(name); });
       field?.addEventListener('input', () => { if (field.getAttribute('aria-invalid') === 'true') validateField(name); });
+      field?.addEventListener('change', () => { if (field.getAttribute('aria-invalid') === 'true') validateField(name); });
     });
 
-    const showResult = (kind: 'demo' | 'success' | 'error') => {
-      result.hidden = false;
-      result.querySelectorAll<HTMLElement>('[data-result-demo], [data-result-success], [data-result-error]').forEach((el) => {
-        el.hidden = !el.matches(`[data-result-${kind}]`);
-      });
-      result.focus();
+    const validateAll = () => {
+      const invalid = (Object.keys(validators) as FieldName[]).filter((name) => !validateField(name));
+      summary.hidden = invalid.length === 0;
+      if (invalid.length) (form.elements.namedItem(invalid[0]) as HTMLElement | null)?.focus();
+      return invalid.length === 0;
     };
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      result.hidden = true;
-      const invalid = Object.keys(validators).filter((name) => !validateField(name));
-      summary.hidden = invalid.length === 0;
-      if (invalid.length) {
-        (form.elements.namedItem(invalid[0]) as HTMLElement | null)?.focus();
-        return;
-      }
-
-      const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
-
-      if (mode !== 'endpoint') {
-        // الوضع التجريبي: لا يُرسل شيء. نجهّز رسالة بريد بالبيانات كبديل مباشر.
-        const lines = [
-          `${form.querySelector('label[for="qf-name"]')?.textContent?.replace('*', '').trim()}: ${data.name}`,
-          `${form.querySelector('label[for="qf-org"]')?.textContent?.trim()}: ${data.organization || '-'}`,
-          `${form.querySelector('label[for="qf-phone"]')?.textContent?.replace('*', '').trim()}: ${data.phone}`,
-          `${form.querySelector('label[for="qf-email"]')?.textContent?.replace('*', '').trim()}: ${data.email}`,
-          `${form.querySelector('label[for="qf-service"]')?.textContent?.replace('*', '').trim()}: ${data.service}`,
-          `${form.querySelector('label[for="qf-count"]')?.textContent?.trim()}: ${data.beneficiaries || '-'}`,
-          '',
-          data.message || '',
-        ];
-        const mailto = form.querySelector<HTMLAnchorElement>('[data-mailto]');
-        if (mailto) {
-          mailto.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(form.dataset.subject ?? '')}&body=${encodeURIComponent(lines.join('\n'))}`;
-        }
-        showResult('demo');
-        return;
-      }
-
-      submit.disabled = true;
-      const original = submitLabel.textContent;
-      submitLabel.textContent = submit.dataset.labelSending ?? original;
+    // التاريخ بصيغتيه الميلادية والهجرية (تقويم أم القرى) لتسهيل قراءته
+    const formatDate = (iso: string) => {
       try {
-        const response = await fetch(form.dataset.endpoint!, {
+        const d = new Date(`${iso}T12:00:00`);
+        const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+        return `${iso} م (${hijri})`;
+      } catch {
+        return iso;
+      }
+    };
+
+    /** بيانات الطلب منسقة بالترتيب: [التسمية، القيمة] */
+    const collect = (): [string, string][] =>
+      FIELDS.map((name) => {
+        let v = value(name).trim();
+        if (name === 'phone' || name === 'quantity') v = normalizeDigits(v);
+        if (name === 'date' && v) v = formatDate(v);
+        return [labels[name], v || text.empty];
+      });
+
+    const fingerprint = () => FIELDS.map((n) => normalizeDigits(value(n)).trim().toLowerCase()).join('␟');
+
+    const showResult = (kind: ResultKind) => {
+      result.hidden = false;
+      result.querySelectorAll<HTMLElement>('[data-result-kind]').forEach((el) => { el.hidden = el.dataset.resultKind !== kind; });
+      result.focus({ preventScroll: false });
+    };
+
+    const setSending = (state: boolean, active?: HTMLButtonElement) => {
+      sending = state;
+      channelButtons.forEach((btn) => {
+        btn.disabled = state;
+        const label = btn.querySelector<HTMLElement>('[data-label]');
+        if (!label) return;
+        if (state && btn === active) {
+          label.dataset.original = label.textContent ?? '';
+          label.textContent = '…';
+          btn.setAttribute('aria-busy', 'true');
+        } else if (!state && label.dataset.original) {
+          label.textContent = label.dataset.original;
+          btn.removeAttribute('aria-busy');
+        }
+      });
+    };
+
+    const readLastSent = (): { fp: string; at: number } | null => {
+      try { return JSON.parse(sessionStorage.getItem(DUP_KEY) ?? 'null'); } catch { return null; }
+    };
+    const writeLastSent = (fp: string) => {
+      try { sessionStorage.setItem(DUP_KEY, JSON.stringify({ fp, at: Date.now() })); } catch { /* التخزين غير متاح */ }
+    };
+
+    // ——— واتساب: رسالة منسقة يرسلها العميل بنفسه ———
+    const sendWhatsApp = () => {
+      const lines = collect().map(([label, v]) => `*${label}:* ${v}`);
+      const message = [`*${text.heading}*`, text.headingEn, '', ...lines].join('\n');
+      const url = `https://wa.me/${cfg.whatsapp}?text=${encodeURIComponent(message)}`;
+      const fallback = form.querySelector<HTMLAnchorElement>('[data-whatsapp-fallback]');
+      if (fallback) fallback.href = url;
+      const win = window.open(url, '_blank');
+      if (win) win.opener = null;
+      else window.location.href = url;
+      showResult('whatsapp');
+    };
+
+    // ——— البريد الإلكتروني عبر Web3Forms ———
+    const sendEmail = async (button: HTMLButtonElement) => {
+      const fp = fingerprint();
+      const last = readLastSent();
+      const windowMs = Number(cfg.dupMinutes ?? 30) * 60_000;
+      if (last && last.fp === fp && Date.now() - last.at < windowMs) {
+        showResult('duplicate');
+        return;
+      }
+
+      const payload: Record<string, string | boolean> = {
+        access_key: cfg.accessKey ?? '',
+        subject: cfg.subject ?? '',
+        from_name: cfg.fromName ?? '',
+        replyto: value('email').trim(),
+      };
+      for (const [label, v] of collect()) payload[label] = v;
+      payload[text.sentFrom] = window.location.href;
+      payload[text.sentAt] = new Date().toLocaleString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', dateStyle: 'medium', timeStyle: 'short' });
+      if (honeypot.checked) payload.botcheck = true;
+
+      const errorText = form.querySelector<HTMLElement>('[data-error-text]')!;
+      errorText.textContent = errorText.dataset.default ?? '';
+      setSending(true, button);
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 20_000);
+      try {
+        const response = await fetch(cfg.endpoint!, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
+          signal: controller.signal,
         });
-        if (!response.ok) throw new Error(String(response.status));
-        form.reset();
-        showResult('success');
+        const data = await response.json().catch(() => null);
+        if (response.ok && data?.success === true) {
+          writeLastSent(fp);
+          form.reset();
+          summary.hidden = true;
+          showResult('success');
+          return;
+        }
+        if (response.status === 429) errorText.textContent = errorText.dataset.rateLimit ?? errorText.textContent;
+        showResult('error');
       } catch {
         showResult('error');
       } finally {
-        submit.disabled = false;
-        submitLabel.textContent = original;
+        window.clearTimeout(timer);
+        setSending(false);
       }
+    };
+
+    // يُحفظ الزر المضغوط احتياطًا للمتصفحات التي لا تدعم SubmitEvent.submitter
+    let lastClicked: HTMLButtonElement | null = null;
+    channelButtons.forEach((btn) => btn.addEventListener('click', () => { lastClicked = btn; }));
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (sending) return;
+      const submitter = (event as SubmitEvent).submitter as HTMLButtonElement | null;
+      const button = submitter?.dataset.channel ? submitter : lastClicked ?? channelButtons[0];
+      lastClicked = null;
+      if (!button) return;
+      result.hidden = true;
+      if (!validateAll()) return;
+      if (button.dataset.channel === 'whatsapp') sendWhatsApp();
+      else void sendEmail(button);
+    });
+
+    form.querySelector('[data-retry-whatsapp]')?.addEventListener('click', () => {
+      if (validateAll()) sendWhatsApp();
     });
   }
 </script>
 
 <style>
   .quote-form { display: grid; gap: var(--sp-4); }
-  .quote-form__demo {
-    display: grid; gap: var(--sp-1);
-    padding: var(--sp-4) var(--sp-5);
-    background: #fff8e6; border: 1px solid #ecd28f; border-radius: var(--r-md);
-    font-size: var(--fs-sm); color: #5a4510;
-  }
-  .quote-form__demo strong { color: #7a5a00; }
   .quote-form__note { font-size: var(--fs-sm); color: var(--c-muted); }
   .quote-form__error-summary {
     display: flex; gap: var(--sp-2); align-items: center;
@@ -274,6 +454,7 @@ const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
   }
   .field input[dir='ltr'] { text-align: right; }
   :global([dir='ltr']) .field input[dir='ltr'] { text-align: left; }
+  .field input[type='date'] { appearance: none; -webkit-appearance: none; min-height: 48px; }
   .field textarea { resize: vertical; min-height: 130px; }
   .field input:hover, .field select:hover, .field textarea:hover { border-color: var(--c-muted); }
   .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
@@ -283,16 +464,37 @@ const isDemo = contactForm.mode !== 'endpoint' || !contactForm.endpoint;
   .field__hint { font-size: var(--fs-xs); color: var(--c-muted); }
   .field__error { font-size: var(--fs-xs); font-weight: 600; color: var(--c-red-strong); min-height: 0; }
   .field__error:empty { display: none; }
-  .quote-form__submit { justify-self: start; min-width: 200px; }
-  .quote-form__submit:disabled { opacity: 0.7; cursor: progress; }
-  @media (max-width: 479px) { .quote-form__submit { justify-self: stretch; } }
 
-  .quote-form__result {
+  .quote-form__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .quote-form__send { display: grid; gap: var(--sp-3); padding-block-start: var(--sp-2); }
+  .quote-form__prompt { font-weight: 600; font-size: var(--fs-sm); color: var(--c-char); }
+  .quote-form__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .quote-form__actions .btn { min-width: 240px; }
+  .quote-form__actions .btn:disabled { opacity: 0.7; cursor: progress; }
+  .quote-form__privacy { font-size: var(--fs-xs); color: var(--c-muted); }
+  @media (max-width: 559px) {
+    .quote-form__actions { flex-direction: column; }
+    .quote-form__actions .btn { width: 100%; min-width: 0; white-space: normal; }
+  }
+
+  .quote-form__result { border-radius: var(--r-md); }
+  .quote-form__result:focus { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .result {
+    display: flex; gap: var(--sp-4); align-items: flex-start;
     padding: var(--sp-5); border-radius: var(--r-md);
     background: var(--c-mist); border-inline-start: 4px solid var(--c-char);
   }
-  .quote-form__result:focus { outline: 3px solid var(--focus); outline-offset: 3px; }
-  .quote-form__result h3 { font-size: var(--fs-h4); }
-  .quote-form__result p { margin-block-start: var(--sp-2); color: var(--c-text); }
-  .quote-form__result-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-block-start: var(--sp-4); }
+  .result[hidden] { display: none; }
+  .result > :global(.icon) { flex-shrink: 0; margin-block-start: 0.15em; }
+  .result--success { background: #f0f7f1; border-color: #2e7d40; }
+  .result--success > :global(.icon) { color: #2e7d40; }
+  .result--error { background: var(--c-red-soft); border-color: var(--c-red); }
+  .result--error > :global(.icon) { color: var(--c-red); }
+  .result--info > :global(.icon) { color: var(--c-char); }
+  .result h3 { font-size: var(--fs-h4); }
+  .result p { margin-block-start: var(--sp-2); color: var(--c-text); }
+  .result .text-link { margin-block-start: var(--sp-3); }
+  .result__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-block-start: var(--sp-4); }
+  .quote-form__noscript { padding: var(--sp-4); background: var(--c-mist); border-radius: var(--r-md); font-size: var(--fs-sm); }
 </style>

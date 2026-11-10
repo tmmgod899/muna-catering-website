@@ -48,6 +48,17 @@ jobs:
           echo "BASE_PATH=${BASE_PATH}" >> "$GITHUB_ENV"
           echo "Site: ${SITE_URL}${BASE_PATH}/"
 
+      # مفتاح Web3Forms لإرسال طلبات عروض الأسعار بالبريد. يُضبط مرة واحدة من:
+      # Settings ← Secrets and variables ← Actions ← Variables ← New repository variable
+      # الاسم: WEB3FORMS_ACCESS_KEY. المفتاح معرّف عام وليس سرًّا؛ عند غيابه يُعرض خيار واتساب فقط.
+      - name: Pass quote form configuration
+        shell: bash
+        env:
+          WEB3FORMS_ACCESS_KEY: ${{ vars.WEB3FORMS_ACCESS_KEY }}
+        run: |
+          echo "PUBLIC_WEB3FORMS_ACCESS_KEY=${WEB3FORMS_ACCESS_KEY}" >> "$GITHUB_ENV"
+          if [ -n "${WEB3FORMS_ACCESS_KEY}" ]; then echo "Quote form: email + WhatsApp"; else echo "Quote form: WhatsApp only (WEB3FORMS_ACCESS_KEY not set)"; fi
+
       - name: Install, build and upload
         uses: withastro/action@v6
         with:

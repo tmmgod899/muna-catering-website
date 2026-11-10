@@ -26,6 +26,15 @@ import kitchenPrepArea from '../assets/images/gallery/kitchen-prep-area.jpg';
 import mealPackingBoxes from '../assets/images/gallery/meal-packing-boxes.jpg';
 import teamGroup from '../assets/images/gallery/team-group.jpg';
 import kitchenHall from '../assets/images/gallery/kitchen-hall.jpg';
+// صور مضافة من مواد الشركة الجديدة (بدقتها الأصلية؛ يولّد Astro المقاسات والصيغ المناسبة)
+import ceoSigningSession from '../assets/images/gallery/ceo-signing-session.jpg';
+import ceoMissionVisit from '../assets/images/gallery/ceo-mission-visit-kitchen.jpg';
+import staffServingStation from '../assets/images/gallery/staff-serving-station.jpg';
+import staffHandingMeal from '../assets/images/gallery/staff-handing-meal.jpg';
+import staffMealDistribution from '../assets/images/gallery/staff-meal-distribution.jpg';
+import staffDistributionHall1 from '../assets/images/gallery/staff-distribution-hall-1.jpg';
+import staffDistributionHall2 from '../assets/images/gallery/staff-distribution-hall-2.jpg';
+import kitchenTourPoster from '../assets/images/gallery/kitchen-tour-poster.jpg';
 
 export interface SiteImage {
   /** الصورة الفعلية، أو null لعرض عنصر نائب واضح */
@@ -56,9 +65,7 @@ export const images = {
     makkah: { src: platingLine, alt: 'فريق العمل أثناء تجهيز الوجبات وتعبئتها' },
     mashaer: { src: teamAprons, alt: 'أفراد من فريق العمل بزي الشركة', placeholder: 'صورة لخدمة الإعاشة في المشاعر المقدسة' },
     institutions: { src: mealPackingBoxes, alt: 'وجبات معبأة وجاهزة للتوزيع' },
-    fresh: { src: kitchenCookingArea, alt: 'منطقة الطهي في مطبخ الشركة' },
-    frozen: { src: null, alt: '', placeholder: 'صورة الوجبات المجمدة بعد التعبئة' },
-    retort: { src: null, alt: '', placeholder: 'صورة الوجبات المعاملة حراريًا (Retort)' },
+    // بطاقات «أنواع الوجبات» في صفحة الخدمات تُعرض دون صور بطلب من الشركة.
     logistics: { src: facilityVan, alt: 'مركبة الشركة أمام مبنى المطبخ' },
   },
   quality: {
@@ -67,15 +74,18 @@ export const images = {
   },
 } satisfies Record<string, Record<string, SiteImage>>;
 
-export type GalleryCategory = 'kitchen' | 'packing' | 'team' | 'facility' | 'meals';
+export type GalleryCategory = 'kitchen' | 'packing' | 'team' | 'facility' | 'meals' | 'meetings';
 
 export interface GalleryItem extends SiteImage {
   category: GalleryCategory;
+  /** مسار مقطع فيديو داخل المجلد public (مثل /media/kitchen-tour.mp4)؛ تُستخدم الصورة حينئذٍ غلافًا له */
+  video?: string;
 }
 
 /**
  * عناصر معرض الصور. لإضافة صورة جديدة: استوردها أعلاه ثم أضف عنصرًا بالتصنيف المناسب.
  * العناصر ذات القيمة null عناصر نائبة تُستبدل بصور الشركة لاحقًا.
+ * ترتيب العناصر الخمسة الأولى يحدد الصور المعروضة في معرض الصفحة الرئيسية.
  */
 export const gallery: GalleryItem[] = [
   { src: kitchenHall, alt: 'صالة الطهي الرئيسية', category: 'kitchen' },
@@ -91,5 +101,13 @@ export const gallery: GalleryItem[] = [
   { src: facilityExterior, alt: 'واجهة مبنى مطابخ منى', category: 'facility' },
   { src: null, alt: '', placeholder: 'صورة وجبة رئيسية جاهزة للتقديم', category: 'meals' },
   { src: null, alt: '', placeholder: 'صورة الوجبات بعد التغليف النهائي', category: 'meals' },
-  { src: null, alt: '', placeholder: 'صورة التوزيع في مواقع الحجاج', category: 'team' },
+  // حلّت الصورة التالية محل العنصر النائب «صورة التوزيع في مواقع الحجاج»
+  { src: staffMealDistribution, alt: 'فريق العمل أثناء توزيع الوجبات على الحجاج', category: 'team' },
+  { src: kitchenTourPoster, alt: 'جولة مصورة داخل مطبخ منى', category: 'kitchen', video: '/media/kitchen-tour.mp4' },
+  { src: staffServingStation, alt: 'أحد أفراد فريق العمل يقدّم الوجبة لحاج من محطة التقديم', category: 'team' },
+  { src: staffHandingMeal, alt: 'أحد أفراد فريق العمل يسلّم وجبة لأحد الحجاج', category: 'team' },
+  { src: staffDistributionHall1, alt: 'أحد أفراد فريق العمل أثناء توزيع الوجبات على المستفيدين', category: 'team' },
+  { src: staffDistributionHall2, alt: 'فريق العمل أثناء توزيع الوجبات على المستفيدين', category: 'team' },
+  { src: ceoMissionVisit, alt: 'الرئيس التنفيذي للشركة مع وفد من البعثة في مطبخ الشركة', category: 'meetings' },
+  { src: ceoSigningSession, alt: 'الرئيس التنفيذي للشركة خلال جلسة توقيع', category: 'meetings' },
 ];

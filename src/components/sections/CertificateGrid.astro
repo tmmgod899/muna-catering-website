@@ -1,0 +1,91 @@
+---
+/**
+ * شبكة صور الشهادات والوثائق؛ كل بطاقة تُفتح بالحجم الكامل في العارض لقراءتها بوضوح.
+ * تُعرض الصور كاملة دون قص (fit: contain) لأن الوثائق تختلف في اتجاهها (طولي أو عرضي).
+ */
+import { getImage } from 'astro:assets';
+import Media from '../ui/Media.astro';
+import Icon from '../ui/Icon.astro';
+import Lightbox from '../ui/Lightbox.astro';
+import { publishedOnly, type CertificateItem } from '../../config/certificates';
+import { t } from '../../i18n/ui';
+import type { Locale } from '../../i18n/locales';
+
+interface Props {
+  items: CertificateItem[];
+  /** معرّف فريد للعارض في الصفحة */
+  id: string;
+  label: string;
+  locale: Locale;
+  /** عدد الأعمدة على الشاشات الكبيرة */
+  columns?: 3 | 4;
+}
+
+const { items, id, label, locale, columns = 4 } = Astro.props;
+const ui = t(locale);
+const list = await Promise.all(
+  publishedOnly(items).map(async (item) => ({
+    ...item,
+    full: (await getImage({ src: item.src, width: Math.min(item.src.width, 1600), format: 'webp', quality: 90 })).src,
+  })),
+);
+const sizes = columns === 4 ? '(min-width: 1100px) 280px, (min-width: 640px) 45vw, 90vw' : '(min-width: 1100px) 380px, (min-width: 640px) 45vw, 90vw';
+---
+
+<ul class:list={['certs', `certs--${columns}`]} role="list">
+  {list.map((item) => (
+    <li class="cert">
+      <button
+        type="button"
+        class="cert__open"
+        data-lightbox-open={id}
+        data-src={item.full}
+        data-alt={item.alt}
+        data-caption={[item.title, item.issuer, item.detail].filter(Boolean).join(' — ')}
+      >
+        <Media image={{ src: item.src, alt: item.alt }} ratio="4 / 3" fit="contain" sizes={sizes} widths={[280, 420, 560, 840]} class="cert__media" />
+        <span class="cert__zoom" aria-hidden="true"><Icon name="zoomIn" size={18} /></span>
+        <span class="visually-hidden">{ui.gallery.open}</span>
+      </button>
+      <div class="cert__body">
+        <h3>{item.issuer}</h3>
+        <p>{item.title}{item.detail && <span> — {item.detail}</span>}</p>
+      </div>
+    </li>
+  ))}
+</ul>
+
+<Lightbox id={id} label={label} locale={locale} variant="document" />
+
+<style>
+  .certs { display: grid; gap: var(--sp-5) var(--sp-4); padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 900px) { .certs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .certs--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 359px) { .certs { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 639px) {
+    .certs { gap: var(--sp-3); }
+    .cert__open { padding: var(--sp-2); }
+    .cert__body { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+    .cert__body h3 { font-size: 0.8125rem; line-height: 1.6; }
+    .cert__body p { font-size: 0.75rem; }
+    .cert__zoom { width: 32px; height: 32px; }
+  }
+
+  .cert { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); overflow: hidden; }
+  .cert__open {
+    position: relative; display: block; width: 100%; padding: var(--sp-3); border: 0;
+    background: var(--c-mist); cursor: zoom-in;
+    border-block-end: 1px solid var(--c-line);
+  }
+  .cert__open :global(.cert__media) { background: transparent; }
+  .cert__open :global(img) { transition: transform 0.4s var(--ease-out); filter: drop-shadow(0 6px 14px rgb(46 49 50 / 0.18)); }
+  .cert__open:hover :global(img) { transform: scale(1.03); }
+  .cert__zoom {
+    position: absolute; inset-block-start: var(--sp-2); inset-inline-end: var(--sp-2);
+    display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+    background: rgb(255 255 255 / 0.95); color: var(--c-char); box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.25);
+  }
+  .cert__body { padding: var(--sp-3) var(--sp-4) var(--sp-4); }
+  .cert__body h3 { font-size: var(--fs-sm); line-height: 1.7; }
+  .cert__body p { margin-block-start: var(--sp-1); font-size: var(--fs-xs); color: var(--c-muted); line-height: 1.7; }
+</style>

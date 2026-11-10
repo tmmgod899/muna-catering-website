@@ -1,0 +1,73 @@
+---
+/**
+ * شبكة شعارات شركاء النجاح بأحجام متسقة. البيانات من src/config/partners.ts.
+ */
+import { Picture } from 'astro:assets';
+import { partners } from '../../config/partners';
+
+interface Props {
+  title: string;
+  intro?: string;
+  /** لون خلفية القسم */
+  tone?: 'paper' | 'mist';
+  headingId?: string;
+}
+
+const { title, intro, tone = 'paper', headingId = 'partners-title' } = Astro.props;
+---
+
+<section class:list={['section', tone === 'mist' && 'section--mist']} aria-labelledby={headingId}>
+  <div class="container">
+    <div class="section-head">
+      <h2 id={headingId}>{title}</h2>
+      {intro && <p>{intro}</p>}
+    </div>
+    <ul class="partners" role="list">
+      {partners.map((p) => (
+        <li class="partner">
+          <Picture
+            src={p.logo}
+            alt={p.name}
+            title={p.name}
+            widths={[...new Set([200, 320, 440].filter((w) => w < p.logo.width).concat(p.logo.width))]}
+            sizes="(min-width: 1024px) 220px, 42vw"
+            formats={['avif', 'webp']}
+            fallbackFormat="png"
+            loading="lazy"
+            decoding="async"
+          />
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .partners {
+    display: grid; gap: var(--sp-3); padding: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) { .partners { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); } }
+  @media (min-width: 1024px) { .partners { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .partner {
+    --tile-h: clamp(104px, 5.5rem + 3vw, 150px);
+    --tile-pad: var(--sp-4);
+    display: grid; place-items: center;
+    height: var(--tile-h);
+    padding: var(--tile-pad) var(--sp-5);
+    background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .section--mist .partner { border-color: transparent; }
+  .partner:hover { border-color: var(--c-line-strong); box-shadow: 0 10px 24px -18px rgb(46 49 50 / 0.45); }
+  .partner :global(picture) { display: contents; }
+  /* ارتفاع صريح للشعار حتى لا تتجاوز الشعارات المربعة حدود البطاقة */
+  .partner :global(img) {
+    width: auto; height: auto; max-width: 100%;
+    max-height: calc(var(--tile-h) - 2 * var(--tile-pad));
+    object-fit: contain;
+  }
+  @media (max-width: 479px) {
+    .partner { --tile-pad: var(--sp-3); padding-inline: var(--sp-3); }
+  }
+</style>

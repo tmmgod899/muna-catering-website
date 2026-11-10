@@ -8,6 +8,7 @@ import ServiceCards from '../components/sections/ServiceCards.astro';
 import SeasonLedger from '../components/sections/SeasonLedger.astro';
 import ProcessSteps from '../components/sections/ProcessSteps.astro';
 import CtaBand from '../components/sections/CtaBand.astro';
+import PartnersGrid from '../components/sections/PartnersGrid.astro';
 import Media from '../components/ui/Media.astro';
 import Icon from '../components/ui/Icon.astro';
 import { images, gallery } from '../config/images';
@@ -105,6 +106,9 @@ const galleryPreview = gallery.filter((g) => g.src).slice(0, 5);
       </ul>
     </div>
   </section>
+
+  <!-- شركاء النجاح -->
+  <PartnersGrid title={homePage.partners.title} intro={homePage.partners.intro} tone="mist" headingId="home-partners-title" />
 
   <CtaBand locale={locale} />
 </BaseLayout>

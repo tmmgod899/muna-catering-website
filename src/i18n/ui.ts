@@ -15,6 +15,7 @@ const ar = {
   requestQuote: 'اطلب عرض سعر',
   callUs: 'اتصل بنا',
   emailUs: 'راسلنا',
+  whatsapp: 'واتساب',
   openMap: 'افتح الموقع في خرائط Google',
   learnMore: 'اعرف المزيد',
   allRightsReserved: 'جميع الحقوق محفوظة',

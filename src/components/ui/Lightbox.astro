@@ -1,0 +1,149 @@
+---
+/**
+ * عارض بملء الشاشة للصور والوثائق ومقاطع الفيديو.
+ * يُفتح من أي عنصر يحمل data-lightbox-open="<id>" مع البيانات:
+ *   data-src (رابط الملف)، data-alt (النص البديل)، data-caption (اختياري)،
+ *   data-type="video" للمقاطع، data-poster (غلاف المقطع).
+ * يتنقل بين العناصر الظاهرة فقط (غير المخفية بالتصفية)، ويدعم لوحة المفاتيح.
+ */
+import Icon from './Icon.astro';
+import { t } from '../../i18n/ui';
+import type { Locale } from '../../i18n/locales';
+
+interface Props {
+  id: string;
+  label: string;
+  locale: Locale;
+  /** 'document': تكبير الوثائق لتملأ مساحة العرض لتسهيل قراءتها */
+  variant?: 'photo' | 'document';
+}
+
+const { id, label, locale, variant = 'photo' } = Astro.props;
+const ui = t(locale);
+---
+
+<dialog class:list={['lightbox', variant === 'document' && 'lightbox--document']} aria-label={label} data-lightbox={id}>
+  <div class="lightbox__frame">
+    <img alt="" data-lightbox-img />
+    <video controls playsinline preload="none" data-lightbox-video hidden></video>
+    <p class="lightbox__caption" data-lightbox-caption></p>
+  </div>
+  <p class="lightbox__counter" aria-live="polite" data-lightbox-counter data-template={ui.gallery.counter}></p>
+  <button type="button" class="lightbox__btn lightbox__close" data-lightbox-close>
+    <Icon name="x" size={24} /><span class="visually-hidden">{ui.gallery.close}</span>
+  </button>
+  <button type="button" class="lightbox__btn lightbox__prev" data-lightbox-prev>
+    <Icon name="chevronRight" size={28} /><span class="visually-hidden">{ui.gallery.prev}</span>
+  </button>
+  <button type="button" class="lightbox__btn lightbox__next" data-lightbox-next>
+    <Icon name="chevronLeft" size={28} /><span class="visually-hidden">{ui.gallery.next}</span>
+  </button>
+</dialog>
+
+<script>
+  const isRtl = document.documentElement.dir === 'rtl';
+
+  document.querySelectorAll<HTMLDialogElement>('dialog[data-lightbox]').forEach((dialog) => {
+    const id = dialog.dataset.lightbox;
+    const img = dialog.querySelector<HTMLImageElement>('[data-lightbox-img]')!;
+    const video = dialog.querySelector<HTMLVideoElement>('[data-lightbox-video]')!;
+    const caption = dialog.querySelector<HTMLElement>('[data-lightbox-caption]')!;
+    const counter = dialog.querySelector<HTMLElement>('[data-lightbox-counter]')!;
+    const prev = dialog.querySelector<HTMLButtonElement>('[data-lightbox-prev]')!;
+    const next = dialog.querySelector<HTMLButtonElement>('[data-lightbox-next]')!;
+    const template = counter.dataset.template ?? '{current} / {total}';
+    const triggers = () =>
+      Array.from(document.querySelectorAll<HTMLElement>(`[data-lightbox-open="${id}"]`)).filter((el) => !el.closest('[hidden]'));
+    let list: HTMLElement[] = [];
+    let index = 0;
+    let opener: HTMLElement | null = null;
+
+    const stopVideo = () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    };
+
+    const show = (i: number) => {
+      index = (i + list.length) % list.length;
+      const item = list[index];
+      const isVideo = item.dataset.type === 'video';
+      stopVideo();
+      img.hidden = isVideo;
+      video.hidden = !isVideo;
+      if (isVideo) {
+        img.removeAttribute('src');
+        video.poster = item.dataset.poster ?? '';
+        video.src = item.dataset.src ?? '';
+        video.setAttribute('aria-label', item.dataset.alt ?? '');
+      } else {
+        img.src = item.dataset.src ?? '';
+        img.alt = item.dataset.alt ?? '';
+      }
+      caption.textContent = item.dataset.caption ?? item.dataset.alt ?? '';
+      counter.textContent = template.replace('{current}', String(index + 1)).replace('{total}', String(list.length));
+      prev.hidden = next.hidden = counter.hidden = list.length < 2;
+    };
+
+    document.querySelectorAll<HTMLElement>(`[data-lightbox-open="${id}"]`).forEach((trigger) =>
+      trigger.addEventListener('click', () => {
+        list = triggers();
+        opener = trigger;
+        show(list.indexOf(trigger));
+        dialog.showModal();
+      }),
+    );
+
+    dialog.querySelector('[data-lightbox-close]')!.addEventListener('click', () => dialog.close());
+    next.addEventListener('click', () => show(index + 1));
+    prev.addEventListener('click', () => show(index - 1));
+    dialog.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLVideoElement) return;
+      if (e.key === 'ArrowLeft') show(index + (isRtl ? 1 : -1));
+      if (e.key === 'ArrowRight') show(index + (isRtl ? -1 : 1));
+    });
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => {
+      stopVideo();
+      opener?.focus();
+    });
+  });
+</script>
+
+<style>
+  .lightbox {
+    width: 100vw; height: 100dvh; max-width: none; max-height: none;
+    margin: 0; padding: clamp(3.5rem, 6vw, 5rem) clamp(1rem, 6vw, 6rem) clamp(4rem, 6vw, 5rem);
+    border: 0; background: rgb(28 30 31 / 0.96); color: #fff;
+    --focus: #fff;
+  }
+  .lightbox[open] { display: grid; place-items: center; }
+  .lightbox::backdrop { background: rgb(28 30 31 / 0.8); }
+  .lightbox__frame { display: grid; justify-items: center; gap: var(--sp-3); max-width: 100%; max-height: 100%; }
+  .lightbox__frame img, .lightbox__frame video {
+    max-width: 100%; max-height: calc(100dvh - 11rem); width: auto; height: auto; object-fit: contain; border-radius: var(--r-sm);
+  }
+  .lightbox__frame [hidden] { display: none; }
+  .lightbox__frame video { background: #000; }
+  /* الوثائق: تُكبَّر لتملأ مساحة العرض المتاحة لأن دقة أغلبها محدودة */
+  .lightbox--document .lightbox__frame { width: 100%; }
+  .lightbox--document .lightbox__frame img { width: 100%; height: calc(100dvh - 11rem); }
+  .lightbox__caption { color: var(--c-on-dark); font-size: var(--fs-sm); text-align: center; }
+  .lightbox__counter { position: absolute; inset-block-start: var(--sp-5); inset-inline-start: var(--sp-5); font-size: var(--fs-sm); color: var(--c-on-dark-muted); }
+  .lightbox__btn {
+    position: absolute; display: inline-grid; place-items: center;
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.3); background: rgb(255 255 255 / 0.08); color: #fff;
+  }
+  .lightbox__btn[hidden] { display: none; }
+  .lightbox__btn:hover { background: rgb(255 255 255 / 0.2); }
+  .lightbox__close { inset-block-start: var(--sp-4); inset-inline-end: var(--sp-4); }
+  .lightbox__prev, .lightbox__next { top: 50%; transform: translateY(-50%); }
+  .lightbox__prev { inset-inline-start: var(--sp-4); }
+  .lightbox__next { inset-inline-end: var(--sp-4); }
+  @media (max-width: 639px) {
+    .lightbox__prev, .lightbox__next { top: auto; bottom: var(--sp-4); transform: none; }
+    .lightbox--document { padding-inline: var(--sp-2); }
+    .lightbox--document .lightbox__frame img { height: calc(100dvh - 12rem); }
+  }
+</style>
